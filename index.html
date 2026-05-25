@@ -298,7 +298,7 @@
     <!-- ══ INSERIR OS ══ -->
     <div class="panel" id="panel-inserir">
       <div class="sec-hdr">
-        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Cole o texto completo — materiais e equipamentos extraídos automaticamente</div></div>
+        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Materiais vêm das palavras-chave no texto. ONT/roteador/ONU só pela lista <strong>Equipamentos instalados</strong>.</div></div>
       </div>
       <div class="card">
         <div class="tags" id="ins-tags"></div>
@@ -337,6 +337,24 @@
             </div>
             <!-- Chips dos extras adicionados -->
             <div id="extras-list"></div>
+          </div>
+          <div class="fg fg-equip">
+            <label class="flabel">
+              <span class="il-6 il-equip">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                Equipamentos instalados
+              </span>
+              <span id="equip-count">0 itens</span>
+            </label>
+            <p class="equip-hint">ONT, roteador, ONU — não use palavras-chave (evita contar “estava desligada” no texto).</p>
+            <div class="extras-field-row">
+              <select id="equip-nome" data-onkeydown="if(event.key==='Enter')document.getElementById('equip-qtd').focus()"></select>
+              <input type="number" id="equip-qtd" placeholder="Qtd" min="1" data-onkeydown="if(event.key==='Enter')adicionarEquipamento()">
+              <button class="btn btn-primary extras-add-btn btn-equip-add" data-onclick="adicionarEquipamento()" title="Adicionar equipamento">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+            </div>
+            <div id="equip-list"></div>
           </div>
         </div>
 
@@ -581,11 +599,20 @@
       <div class="grid-2">
         <div class="card">
           <div class="card-title">Palavras-chave de materiais</div>
-          <div class="il-10">Materiais detectados automaticamente nas OS</div>
+          <div class="il-10">Só consumíveis no texto da OS (ex: CABO LAN: (16)). Com quantidade no formato indicado.</div>
           <div id="kw-list"></div>
           <div class="il-11">
             <input type="text" id="kw-input" placeholder="Nova palavra-chave...">
             <button class="btn btn-primary" data-onclick="addKw()">Adicionar</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Equipamentos (ONT / roteador / ONU)</div>
+          <div class="il-10">Lista para instalação manual — <strong>não</strong> lê do texto da OS.</div>
+          <div id="equip-catalog-list"></div>
+          <div class="il-11">
+            <input type="text" id="equip-catalog-input" placeholder="Ex: ONT TP LINK XC220-G3v" data-onkeydown="if(event.key==='Enter')addEquipCatalog()">
+            <button class="btn btn-primary btn-equip-add" data-onclick="addEquipCatalog()">Adicionar</button>
           </div>
         </div>
       </div>
@@ -623,7 +650,7 @@
 window.SUPABASE_URL = window.SUPABASE_URL || 'https://cdqrweoqsjefyzowibjd.supabase.co';
 window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkcXJ3ZW9xc2plZnl6b3dpYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzAwNjcsImV4cCI6MjA5NTI0NjA2N30.S7N6_D_SXAjnIBY3tbmN0cMzy5AvbIo3eIEGSo7p6Ss';
 </script>
-<script src="supabase-db.js?v=8"></script>
-<script src="script.js?v=8"></script>
+<script src="supabase-db.js?v=10"></script>
+<script src="script.js?v=10"></script>
 </body>
 </html>

@@ -21,6 +21,14 @@ create table if not exists keywords (
   created_at timestamptz not null default now()
 );
 
+-- Equipamentos (ONT, roteador, ONU) — cadastro manual, não extrai do texto da OS
+create table if not exists equipamentos (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+
 -- Ordens de serviço
 create table if not exists orders (
   id bigint generated always as identity primary key,
@@ -34,6 +42,7 @@ create table if not exists orders (
   texto_os text,
   extracted jsonb not null default '{}',
   extras jsonb not null default '[]',
+  equipamentos jsonb not null default '[]',
   created_at timestamptz not null default now()
 );
 
@@ -157,6 +166,21 @@ drop policy if exists "keywords_delete_master" on keywords;
 create policy "keywords_delete_master"
   on keywords for delete to authenticated using (public.is_master());
 
+-- ── RLS: equipamentos ──
+alter table equipamentos enable row level security;
+
+drop policy if exists "equipamentos_select_all" on equipamentos;
+create policy "equipamentos_select_all"
+  on equipamentos for select to authenticated using (true);
+
+drop policy if exists "equipamentos_insert_all" on equipamentos;
+create policy "equipamentos_insert_all"
+  on equipamentos for insert to authenticated with check (true);
+
+drop policy if exists "equipamentos_delete_master" on equipamentos;
+create policy "equipamentos_delete_master"
+  on equipamentos for delete to authenticated using (public.is_master());
+
 -- ── RLS: orders ──
 alter table orders enable row level security;
 
@@ -211,6 +235,12 @@ insert into keywords (name, sort_order) values
   ('METROS DE DROP', 4),
   ('CONECTOR UPC/APC', 5),
   ('ACOPLADOR', 6)
+on conflict (name) do nothing;
+
+insert into equipamentos (name, sort_order) values
+  ('ONT TP LINK', 1),
+  ('ROTEADOR TP LINK', 2),
+  ('ONU', 3)
 on conflict (name) do nothing;
 
 -- ══ Promover usuário a master manualmente (SQL Editor): ══

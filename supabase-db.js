@@ -70,9 +70,10 @@
   }
 
   const TEXTO_OS_TIPO = '__texto_os';
+  const EQUIP_TIPO = '__equip';
 
   function packExtrasForDb(order) {
-    const items = [...(order.extras || [])].filter((e) => e && e.tipo !== TEXTO_OS_TIPO);
+    const items = [...(order.extras || [])].filter((e) => e && e.tipo !== TEXTO_OS_TIPO && e.tipo !== EQUIP_TIPO);
     const texto = String(order.textoOS || '').trim();
     if (texto) items.unshift({ tipo: TEXTO_OS_TIPO, conteudo: texto });
     return items;
@@ -83,8 +84,30 @@
     const textoEntry = list.find((e) => e && e.tipo === TEXTO_OS_TIPO);
     return {
       textoOS: (textoEntry && textoEntry.conteudo) ? String(textoEntry.conteudo) : '',
-      extras: list.filter((e) => e && e.tipo !== TEXTO_OS_TIPO),
+      extras: list.filter((e) => e && e.tipo !== TEXTO_OS_TIPO && e.tipo !== EQUIP_TIPO),
     };
+  }
+
+  function normalizeEquipList(list) {
+    return (Array.isArray(list) ? list : [])
+      .filter((e) => e && (e.nome || e.name))
+      .map((e) => ({ nome: String(e.nome || e.name).trim(), qtd: parseInt(e.qtd, 10) || 1 }));
+  }
+
+  function unpackEquipamentosFromDb(row, extrasList) {
+    const col = normalizeEquipList(row.equipamentos);
+    if (col.length) return col;
+    return (extrasList || [])
+      .filter((e) => e && e.tipo === EQUIP_TIPO)
+      .map((e) => ({ nome: e.nome, qtd: parseInt(e.qtd, 10) || 1 }));
+  }
+
+  function packEquipamentosFallbackInExtras(order) {
+    return normalizeEquipList(order.equipamentos).map((e) => ({
+      tipo: EQUIP_TIPO,
+      nome: e.nome,
+      qtd: e.qtd,
+    }));
   }
 
   function mapOrder(row) {
@@ -103,6 +126,7 @@
       textoOS: textoCol || unpacked.textoOS,
       extracted: row.extracted || {},
       extras: unpacked.extras,
+      equipamentos: unpackEquipamentosFromDb(row, row.extras),
       createdBy: row.created_by,
       createdByName: row.created_by_name,
     };
@@ -160,19 +184,25 @@
 
   async function loadAllData() {
     const sb = getClient();
-    const [ordersRes, kwRes, entRes] = await Promise.all([
+    const [ordersRes, kwRes, entRes, equipRes] = await Promise.all([
       sb.from('orders').select('*').order('created_at', { ascending: true }),
       sb.from('keywords').select('name, sort_order').order('sort_order', { ascending: true }),
       sb.from('entregas').select('*').order('created_at', { ascending: true }),
+      sb.from('equipamentos').select('name, sort_order').order('sort_order', { ascending: true }),
     ]);
 
     if (ordersRes.error) throw ordersRes.error;
     if (kwRes.error) throw kwRes.error;
     if (entRes.error) throw entRes.error;
 
+    const equipamentos = equipRes.error
+      ? []
+      : (equipRes.data || []).map((k) => k.name);
+
     return {
       orders: (ordersRes.data || []).map(mapOrder),
       keywords: (kwRes.data || []).map((k) => k.name),
+      equipamentos,
       entregas: (entRes.data || []).map(mapEntrega),
     };
   }
@@ -246,7 +276,8 @@
   async function insertOrder(order) {
     const sb = getClient();
     const u = currentUser;
-    const row = {
+    const equips = normalizeEquipList(order.equipamentos);
+    const base = {
       created_by: u.id,
       created_by_name: u.displayName,
       os_date: order.date,
@@ -257,9 +288,15 @@
       extracted: order.extracted,
       extras: packExtrasForDb(order),
     };
-    const { data, error } = await sb.from('orders').insert(row).select().single();
-    if (error) throw error;
-    return mapOrder(data);
+    let res = await sb.from('orders').insert({ ...base, equipamentos: equips }).select().single();
+    if (res.error && /equipamentos|schema cache/i.test(res.error.message || '')) {
+      res = await sb.from('orders').insert({
+        ...base,
+        extras: [...base.extras, ...packEquipamentosFallbackInExtras(order)],
+      }).select().single();
+    }
+    if (res.error) throw res.error;
+    return mapOrder(res.data);
   }
 
   async function deleteAllOrders() {
@@ -324,6 +361,29 @@
     return (data || []).map((k) => k.name);
   }
 
+  async function insertEquipamento(name) {
+    const sb = getClient();
+    const { error } = await sb.from('equipamentos').insert({ name, sort_order: 999 });
+    if (error) {
+      if (error.code === '23505') return;
+      throw error;
+    }
+  }
+
+  async function deleteEquipamentoByName(name) {
+    if (!isMaster()) throw new Error('Apenas o master pode remover equipamentos da lista.');
+    const sb = getClient();
+    const { error } = await sb.from('equipamentos').delete().eq('name', name);
+    if (error) throw error;
+  }
+
+  async function reloadEquipamentos() {
+    const sb = getClient();
+    const { data, error } = await sb.from('equipamentos').select('name').order('sort_order');
+    if (error) throw error;
+    return (data || []).map((k) => k.name);
+  }
+
   global.DB = {
     isConfigured,
     verifyApiKey,
@@ -345,6 +405,9 @@
     insertKeyword,
     deleteKeywordByName,
     reloadKeywords,
+    insertEquipamento,
+    deleteEquipamentoByName,
+    reloadEquipamentos,
     setCurrentUser: (u) => { currentUser = u; },
   };
 })(window);
