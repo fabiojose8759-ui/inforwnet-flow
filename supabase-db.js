@@ -246,7 +246,7 @@
   async function insertOrder(order) {
     const sb = getClient();
     const u = currentUser;
-    const base = {
+    const row = {
       created_by: u.id,
       created_by_name: u.displayName,
       os_date: order.date,
@@ -257,14 +257,9 @@
       extracted: order.extracted,
       extras: packExtrasForDb(order),
     };
-    const texto = String(order.textoOS || '').trim();
-
-    let res = await sb.from('orders').insert({ ...base, texto_os: texto }).select().single();
-    if (res.error && texto && /texto_os|column|schema cache/i.test(res.error.message || '')) {
-      res = await sb.from('orders').insert(base).select().single();
-    }
-    if (res.error) throw res.error;
-    return mapOrder(res.data);
+    const { data, error } = await sb.from('orders').insert(row).select().single();
+    if (error) throw error;
+    return mapOrder(data);
   }
 
   async function deleteAllOrders() {
