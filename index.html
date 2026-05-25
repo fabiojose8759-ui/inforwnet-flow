@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <!-- ══ MODAL SYSTEM ══ -->
@@ -31,7 +31,12 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-logo-icon" aria-hidden="true"></div>
+      <div class="login-logo-icon" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M10.54 16.1a6 6 0 0 1 2.92 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+      </div>
       <div class="login-logo-text">
         <div class="login-logo-brand">INFORWNET</div>
         <div class="login-logo-sub">TELECOM · OS MANAGER</div>
@@ -253,7 +258,7 @@
 
     <!-- ══ DASHBOARD ══ -->
     <div class="panel active" id="panel-dashboard">
-      <div class="kpi-row">
+      <div class="kpi-row kpi-row-dash">
         <div class="kpi kpi-anim"><div class="kpi-val" id="kpi-total-os">0</div><div class="kpi-lbl">Total de OS</div></div>
         <div class="kpi kpi-anim"><div class="kpi-val" id="kpi-total-mat">0</div><div class="kpi-lbl">Total de Materiais</div></div>
         <div class="kpi kpi-anim"><div class="kpi-val" id="kpi-e1">0</div><div class="kpi-lbl">OS Equipe 1</div></div>
@@ -614,7 +619,7 @@
 window.SUPABASE_URL = window.SUPABASE_URL || 'https://cdqrweoqsjefyzowibjd.supabase.co';
 window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkcXJ3ZW9xc2plZnl6b3dpYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzAwNjcsImV4cCI6MjA5NTI0NjA2N30.S7N6_D_SXAjnIBY3tbmN0cMzy5AvbIo3eIEGSo7p6Ss';
 </script>
-<script src="supabase-db.js"></script>
-<script src="script.js"></script>
+<script src="supabase-db.js?v=4"></script>
+<script src="script.js?v=4"></script>
 </body>
 </html>

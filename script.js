@@ -2060,6 +2060,14 @@ function fazerLogout() {
   });
 }
 
+function formatNomeTopbar(nome) {
+  const bruto = String(nome || '').trim();
+  if (!bruto) return 'usuario : —';
+  const base = bruto.includes('@') ? bruto.split('@')[0] : bruto;
+  const formatado = base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
+  return `usuario : ${formatado}`;
+}
+
 function setUsuarioUI(user) {
   if(!user) return;
   const nome  = user.displayName || user.email || '';
@@ -2069,7 +2077,7 @@ function setUsuarioUI(user) {
   const el2 = document.getElementById('topbar-avatar');
   const el3 = document.getElementById('sidebar-user-email');
   const el4 = document.getElementById('sidebar-avatar-mini');
-  if(el1) el1.textContent = nome;
+  if(el1) el1.textContent = formatNomeTopbar(nome);
   if(el2) el2.textContent = initials;
   if(el3) el3.textContent = email;
   if(el4) el4.textContent = initials;
