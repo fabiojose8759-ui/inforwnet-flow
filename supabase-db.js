@@ -80,6 +80,7 @@
       tipo,
       tipoLabel: TIPO_OS_LABELS[tipo] || 'Corretiva',
       numOS: row.num_os || '—',
+      textoOS: row.texto_os || '',
       extracted: row.extracted || {},
       extras: row.extras || [],
       createdBy: row.created_by,
@@ -233,6 +234,7 @@
       tecnico: order.tecnico,
       tipo: order.tipo,
       num_os: order.numOS,
+      texto_os: order.textoOS || '',
       extracted: order.extracted,
       extras: order.extras || [],
     };

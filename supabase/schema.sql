@@ -31,6 +31,7 @@ create table if not exists orders (
   tecnico text,
   tipo text,
   num_os text,
+  texto_os text,
   extracted jsonb not null default '{}',
   extras jsonb not null default '[]',
   created_at timestamptz not null default now()

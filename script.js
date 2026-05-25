@@ -338,6 +338,7 @@ async function processarOS() {
     team, tecnico: tec||'—',
     tipo: tipo||'corretiva', tipoLabel: TIPO_OS_LABELS[tipo]||'Corretiva',
     numOS: numOS||'—',
+    textoOS: texto,
     extracted,
     extras: extrasTemp.length ? [...extrasTemp] : []
   };
@@ -561,27 +562,88 @@ function setOrdemFilter(f, el) {
   renderOrdens();
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildOSItemHtml(o, idx, opts = {}) {
+  const items = Object.entries(o.extracted || {});
+  const tipoLabel = o.tipoLabel || TIPO_OS_LABELS[o.tipo] || '📄 Geral';
+  const extrasCount = (o.extras || []).length;
+  const anim = opts.anim !== false;
+  const animAttr = anim ? ` class="os-item os-item-anim" style="animation-delay:${Math.min(idx * 0.04, 0.4)}s"` : ' class="os-item"';
+  const temTexto = !!(o.textoOS || '').trim();
+  return `<div${animAttr}>
+      <div class="os-header">
+        ${o.numOS && o.numOS !== '—' ? `<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.2);border-radius:4px;padding:2px 9px;">#${escapeHtml(o.numOS)}</span>` : ''}
+        <span class="os-date">${escapeHtml(o.dateLabel || o.date)}</span>
+        ${o.tecnico !== '—' ? `<span class="os-tech">${escapeHtml(o.tecnico)}</span>` : ''}
+        <span style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">${escapeHtml(tipoLabel)}</span>
+        ${extrasCount ? `<span style="font-size:10px;font-family:var(--mono);color:var(--orange);background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);border-radius:6px;padding:2px 8px;">⊕ ${extrasCount} extra${extrasCount > 1 ? 's' : ''}</span>` : ''}
+        <span class="os-team"><span class="badge ${o.team === 'equipe1' ? 'badge-blue' : 'badge-warn'}">${o.team === 'equipe1' ? 'Equipe 1' : 'Equipe 2'}</span></span>
+        ${userBadge(o)}
+        <button type="button" class="btn-ver-os${temTexto ? '' : ' btn-ver-os--off'}" onclick="verOSCompleta(${o.id})" title="${temTexto ? 'Ver texto completo da OS' : 'Texto não salvo nesta OS'}">Ver OS completa</button>
+      </div>
+      ${items.length ? `<div class="os-mats">${items.map(([k, v]) => `<span class="chip">${escapeHtml(k)}: <strong>${v}</strong></span>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+function verOSCompleta(orderId) {
+  const o = orders.find((x) => x.id === orderId);
+  if (!o) {
+    appAlert('OS não encontrada.', 'warn', 'Erro');
+    return;
+  }
+  const texto = (o.textoOS || '').trim();
+  const titulo = o.numOS && o.numOS !== '—' ? `OS #${o.numOS}` : 'Ordem de serviço';
+  const meta = [
+    o.dateLabel || o.date,
+    o.tecnico !== '—' ? o.tecnico : '',
+    o.tipoLabel || TIPO_OS_LABELS[o.tipo] || '',
+    o.team === 'equipe1' ? 'Equipe 1' : 'Equipe 2',
+  ].filter(Boolean).join(' · ');
+
+  if (!texto) {
+    appAlert(
+      'O texto completo desta OS não foi salvo.<br><small style="opacity:.85">OS antigas ou registradas antes desta função não têm o texto. Novas OS passam a guardar o conteúdo automaticamente.</small>',
+      'warn',
+      titulo
+    );
+    return;
+  }
+
+  const box = document.getElementById('app-modal-box');
+  box.classList.add('modal-box--os');
+  showModal({
+    type: 'info',
+    title: titulo,
+    msg: `<div class="os-view-meta">${escapeHtml(meta)}</div><pre class="os-texto-full">${escapeHtml(texto)}</pre>`,
+    actions: [
+      { label: 'Copiar texto', style: 'ghost', value: 'copy' },
+      { label: 'Fechar', style: 'primary', value: 'ok' },
+    ],
+  }).then((v) => {
+    box.classList.remove('modal-box--os');
+    if (v === 'copy') {
+      const done = () => appAlert('Texto da OS copiado.', 'success', 'Copiado');
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(texto).then(done).catch(() => appAlert('Não foi possível copiar.', 'error'));
+      } else {
+        appAlert('Copie manualmente pelo texto exibido.', 'warn');
+      }
+    }
+  });
+}
+
 function renderOrdens() {
   const f = ordemFilter==='all' ? orders : orders.filter(o => o.team===ordemFilter);
   const el = document.getElementById('ordens-list');
   if(!f.length) { el.innerHTML='<div class="empty">Nenhuma OS encontrada.</div>'; return; }
-  el.innerHTML = [...f].reverse().map((o,idx) => {
-    const items = Object.entries(o.extracted||{});
-    const tipoLabel = o.tipoLabel || TIPO_OS_LABELS[o.tipo] || '📄 Geral';
-    const extrasCount = (o.extras||[]).length;
-    return `<div class="os-item os-item-anim" style="animation-delay:${Math.min(idx*0.04,0.4)}s">
-      <div class="os-header">
-        ${o.numOS&&o.numOS!=='—' ? `<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.2);border-radius:4px;padding:2px 9px;">#${o.numOS}</span>` : ''}
-        <span class="os-date">${o.dateLabel||o.date}</span>
-        ${o.tecnico!=='—' ? `<span class="os-tech">${o.tecnico}</span>` : ''}
-        <span style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:2px 8px;">${tipoLabel}</span>
-        ${extrasCount ? `<span style="font-size:10px;font-family:var(--mono);color:var(--orange);background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.2);border-radius:6px;padding:2px 8px;">⊕ ${extrasCount} extra${extrasCount>1?'s':''}</span>` : ''}
-        <span class="os-team"><span class="badge ${o.team==='equipe1'?'badge-blue':'badge-warn'}">${o.team==='equipe1'?'Equipe 1':'Equipe 2'}</span></span>
-        ${userBadge(o)}
-      </div>
-      ${items.length ? `<div class="os-mats">${items.map(([k,v])=>`<span class="chip">${k}: <strong>${v}</strong></span>`).join('')}</div>` : ''}
-    </div>`;
-  }).join('');
+  el.innerHTML = [...f].reverse().map((o, idx) => buildOSItemHtml(o, idx)).join('');
 }
 
 // ══════════════════════════════════════
@@ -795,15 +857,7 @@ function renderRelDiario() {
     </div>
     <div class="card">
       <div class="card-title">OS do dia</div>
-      ${f.map(o=>{
-        return `<div class="os-item">
-          <div class="os-header">
-            <span class="os-tech">${o.tecnico!=='—'?o.tecnico:'—'}</span>
-            <span class="os-team"><span class="badge ${o.team==='equipe1'?'badge-blue':'badge-warn'}">${o.team==='equipe1'?'Equipe 1':'Equipe 2'}</span></span>
-          </div>
-          <div class="os-mats">${Object.entries(o.extracted||{}).map(([k,v])=>`<span class="chip">${k}: <strong>${v}</strong></span>`).join('')}</div>
-        </div>`;
-      }).join('')}
+      ${f.map((o, idx) => buildOSItemHtml(o, idx, { anim: false })).join('')}
     </div>
   </div>`;
   // ProTable após innerHTML
@@ -916,19 +970,7 @@ function renderRelMensal() {
 function renderHistorico() {
   const el = document.getElementById('hist-list');
   if(!orders.length) { el.innerHTML='<div class="empty">Nenhuma OS registrada.</div>'; return; }
-  el.innerHTML = [...orders].reverse().map(o => {
-    const items = Object.entries(o.extracted||{});
-    return `<div class="os-item">
-      <div class="os-header">
-        ${o.numOS&&o.numOS!=='—' ? `<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.2);border-radius:4px;padding:2px 9px;">#${o.numOS}</span>` : ''}
-        <span class="os-date">${o.dateLabel||o.date}</span>
-        ${o.tecnico!=='—'?`<span class="os-tech">${o.tecnico}</span>`:''}
-        <span class="os-team"><span class="badge ${o.team==='equipe1'?'badge-blue':'badge-warn'}">${o.team==='equipe1'?'Equipe 1':'Equipe 2'}</span></span>
-        ${userBadge(o)}
-      </div>
-      <div class="os-mats">${items.map(([k,v])=>`<span class="chip">${k}: <strong>${v}</strong></span>`).join('')}</div>
-    </div>`;
-  }).join('');
+  el.innerHTML = [...orders].reverse().map((o, idx) => buildOSItemHtml(o, idx, { anim: false })).join('');
 }
 
 function limparTudo() {
