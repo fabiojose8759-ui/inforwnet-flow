@@ -134,6 +134,11 @@ const fmtDate = s => { try { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`
 const fmtDateLong = s => { try { const [y,m,d]=s.split('-'); return new Date(+y,+m-1,+d).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}); } catch(e){ return s; } };
 
 document.getElementById('top-date').textContent = today.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+function atualizarDataTopbar() {
+  const el = document.getElementById('top-date');
+  if (!el) return;
+  el.textContent = new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+}
 document.getElementById('rel-dia').value = todayStr();
 
 const COLORS = ['#3b82f6','#22d3ee','#a78bfa','#f59e0b','#22c55e','#f87171','#fb923c','#e879f9'];
@@ -2062,10 +2067,9 @@ function fazerLogout() {
 
 function formatNomeTopbar(nome) {
   const bruto = String(nome || '').trim();
-  if (!bruto) return 'usuario : —';
+  if (!bruto) return '—';
   const base = bruto.includes('@') ? bruto.split('@')[0] : bruto;
-  const formatado = base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
-  return `usuario : ${formatado}`;
+  return base.charAt(0).toUpperCase() + base.slice(1).toLowerCase();
 }
 
 function setUsuarioUI(user) {
@@ -2073,7 +2077,7 @@ function setUsuarioUI(user) {
   const nome  = user.displayName || user.email || '';
   const email = user.email || '';
   const initials = nome.substring(0, 2).toUpperCase();
-  const el1 = document.getElementById('topbar-user-email');
+  const el1 = document.getElementById('topbar-user-name');
   const el2 = document.getElementById('topbar-avatar');
   const el3 = document.getElementById('sidebar-user-email');
   const el4 = document.getElementById('sidebar-avatar-mini');

@@ -13,7 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <!-- ══ MODAL SYSTEM ══ -->
@@ -242,15 +242,19 @@
       </div>
     </div>
     <div class="topbar-right">
-      <div class="top-date" id="top-date"></div>
-      <div class="il-4">
-        <div class="label">
-          <span id="topbar-user-email"></span>
-          <span class="role-pill" id="topbar-role-pill" style="display:none">Master</span>
-          <span class="il-3">Online</span>
+      <div class="topbar-meta">
+        <div class="topbar-meta-item">
+          <span class="topbar-meta-label">Data:</span>
+          <span class="topbar-meta-value" id="top-date"></span>
         </div>
-        <div class="avatar" id="topbar-avatar">IW</div>
+        <div class="topbar-meta-divider" aria-hidden="true"></div>
+        <div class="topbar-meta-item">
+          <span class="topbar-meta-label">Usuário:</span>
+          <span class="topbar-meta-value" id="topbar-user-name">—</span>
+        </div>
+        <span class="role-pill topbar-meta-pill" id="topbar-role-pill" style="display:none">Master</span>
       </div>
+      <div class="avatar" id="topbar-avatar">IW</div>
     </div>
   </div>
 
@@ -619,7 +623,7 @@
 window.SUPABASE_URL = window.SUPABASE_URL || 'https://cdqrweoqsjefyzowibjd.supabase.co';
 window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkcXJ3ZW9xc2plZnl6b3dpYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzAwNjcsImV4cCI6MjA5NTI0NjA2N30.S7N6_D_SXAjnIBY3tbmN0cMzy5AvbIo3eIEGSo7p6Ss';
 </script>
-<script src="supabase-db.js?v=4"></script>
-<script src="script.js?v=4"></script>
+<script src="supabase-db.js?v=5"></script>
+<script src="script.js?v=5"></script>
 </body>
 </html>
