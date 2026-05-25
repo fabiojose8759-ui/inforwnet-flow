@@ -573,7 +573,7 @@ function escapeHtml(str) {
 function buildOSItemHtml(o, idx, opts = {}) {
   const items = Object.entries(o.extracted || {});
   const tipoLabel = o.tipoLabel || TIPO_OS_LABELS[o.tipo] || '📄 Geral';
-  const extrasCount = (o.extras || []).length;
+  const extrasCount = (o.extras || []).filter((e) => e && e.tipo !== '__texto_os').length;
   const anim = opts.anim !== false;
   const animAttr = anim ? ` class="os-item os-item-anim" style="animation-delay:${Math.min(idx * 0.04, 0.4)}s"` : ' class="os-item"';
   const temTexto = !!(o.textoOS || '').trim();

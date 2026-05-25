@@ -21,7 +21,7 @@ O **primeiro usuário cadastrado** vira **master** automaticamente.
 2. Cole todo o conteúdo de `schema.sql`  
 3. Run  
 
-**Já tinha o banco antes?** Rode também `migration_texto_os.sql` (guarda o texto completo da OS para o botão “Ver OS completa”).
+**Texto completo da OS:** o sistema já salva automaticamente (campo `extras` ou `texto_os`). Opcional: rode `migration_texto_os.sql` para uma coluna dedicada no banco.
 
 ### 3. Autenticação por e-mail
 1. **Authentication** → **Providers** → Email → Enable  

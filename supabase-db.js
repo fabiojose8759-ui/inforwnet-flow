@@ -69,8 +69,28 @@
     }
   }
 
+  const TEXTO_OS_TIPO = '__texto_os';
+
+  function packExtrasForDb(order) {
+    const items = [...(order.extras || [])].filter((e) => e && e.tipo !== TEXTO_OS_TIPO);
+    const texto = String(order.textoOS || '').trim();
+    if (texto) items.unshift({ tipo: TEXTO_OS_TIPO, conteudo: texto });
+    return items;
+  }
+
+  function unpackExtrasFromDb(extras) {
+    const list = Array.isArray(extras) ? extras : [];
+    const textoEntry = list.find((e) => e && e.tipo === TEXTO_OS_TIPO);
+    return {
+      textoOS: (textoEntry && textoEntry.conteudo) ? String(textoEntry.conteudo) : '',
+      extras: list.filter((e) => e && e.tipo !== TEXTO_OS_TIPO),
+    };
+  }
+
   function mapOrder(row) {
     const tipo = row.tipo || 'corretiva';
+    const unpacked = unpackExtrasFromDb(row.extras);
+    const textoCol = (row.texto_os && String(row.texto_os).trim()) || '';
     return {
       id: row.id,
       date: row.os_date,
@@ -80,9 +100,9 @@
       tipo,
       tipoLabel: TIPO_OS_LABELS[tipo] || 'Corretiva',
       numOS: row.num_os || '—',
-      textoOS: row.texto_os || '',
+      textoOS: textoCol || unpacked.textoOS,
       extracted: row.extracted || {},
-      extras: row.extras || [],
+      extras: unpacked.extras,
       createdBy: row.created_by,
       createdByName: row.created_by_name,
     };
@@ -226,7 +246,7 @@
   async function insertOrder(order) {
     const sb = getClient();
     const u = currentUser;
-    const row = {
+    const base = {
       created_by: u.id,
       created_by_name: u.displayName,
       os_date: order.date,
@@ -234,13 +254,17 @@
       tecnico: order.tecnico,
       tipo: order.tipo,
       num_os: order.numOS,
-      texto_os: order.textoOS || '',
       extracted: order.extracted,
-      extras: order.extras || [],
+      extras: packExtrasForDb(order),
     };
-    const { data, error } = await sb.from('orders').insert(row).select().single();
-    if (error) throw error;
-    return mapOrder(data);
+    const texto = String(order.textoOS || '').trim();
+
+    let res = await sb.from('orders').insert({ ...base, texto_os: texto }).select().single();
+    if (res.error && texto && /texto_os|column|schema cache/i.test(res.error.message || '')) {
+      res = await sb.from('orders').insert(base).select().single();
+    }
+    if (res.error) throw res.error;
+    return mapOrder(res.data);
   }
 
   async function deleteAllOrders() {
