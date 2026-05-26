@@ -205,6 +205,13 @@
       <span class="label">Controle Diário</span>
     </div>
 
+    <!-- CHECKLIST -->
+    <div class="nav-group-label label">Ferramentas</div>
+    <div class="nav-item nav-child" data-onclick="nav('checklist',this)">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span class="label">Checklist</span>
+    </div>
+
     <!-- SISTEMA -->
     <div class="nav-group-label label">Sistema</div>
     <div class="nav-item nav-child" data-onclick="nav('config',this)">
@@ -618,6 +625,52 @@
           <div class="card-title">Importar dados</div>
           <input type="file" id="import-file" accept=".json" data-onchange="importarJSON(this)">
           <p class="il-14">Importe um backup .json exportado anteriormente.</p>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══ CHECKLIST ══ -->
+    <div class="panel" id="panel-checklist">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title">Checklist de Conferência</div>
+          <div class="sec-sub">Confira os materiais com a equipe e envie o resumo pelo WhatsApp</div>
+        </div>
+        <button class="btn btn-ghost" data-onclick="editarItensChecklist()">✎ Editar itens</button>
+      </div>
+
+      <div class="grid-2">
+        <!-- Formulário -->
+        <div class="card">
+          <div class="card-title">Dados da equipe</div>
+          <div class="fg" style="margin-bottom:12px;">
+            <label class="flabel">Equipe</label>
+            <select id="chk-equipe" onchange="renderChecklistPreview()">
+              <option value="EQUIPE 01">Equipe 01</option>
+              <option value="EQUIPE 02">Equipe 02</option>
+            </select>
+          </div>
+          <div class="fg" style="margin-bottom:16px;">
+            <label class="flabel">Técnico</label>
+            <input type="text" id="chk-tecnico" placeholder="Nome do técnico" onblur="renderChecklistPreview()">
+          </div>
+
+          <div class="card-title" style="margin-bottom:10px;">Materiais</div>
+          <div id="chk-itens-form"></div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="card-title">Prévia da mensagem</div>
+          <pre id="chk-preview" style="font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;white-space:pre-wrap;flex:1;overflow-y:auto;max-height:480px;"></pre>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" style="flex:1;" data-onclick="copiarChecklist()">📋 Copiar texto</button>
+            <button class="btn btn-primary" style="flex:1;" data-onclick="enviarChecklistWhatsApp()">📲 Enviar WhatsApp</button>
+          </div>
+          <div id="chk-wpp-hint" style="font-size:10px;color:var(--muted);text-align:center;display:none;">
+            Link do grupo não configurado. <a href="#" data-onclick="nav('config',this)" style="color:var(--accent);">Configure nas Configurações</a>
+          </div>
         </div>
       </div>
     </div>

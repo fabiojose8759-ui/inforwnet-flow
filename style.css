@@ -728,3 +728,20 @@ select option{background:var(--bg3);}
 .divider{margin:14px 0;}
 #import-file{margin-bottom:8px;}
 .il-14{font-size:10px;color:var(--muted)}
+
+/* ── Botões Editar / Apagar OS ── */
+.btn-edit-os{background:rgba(34,211,238,0.1);border:1px solid rgba(34,211,238,0.25);color:var(--accent2);font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.btn-edit-os:hover{background:rgba(34,211,238,0.2);}
+.btn-del-os{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);color:#f87171;font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.btn-del-os:hover{background:rgba(239,68,68,0.22);}
+/* ── Formulário de edição de OS ── */
+.edit-os-form{display:flex;flex-direction:column;gap:12px;}
+.edit-os-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.edit-os-field{display:flex;flex-direction:column;gap:4px;}
+.edit-extra-item{display:flex;align-items:center;justify-content:space-between;background:var(--bg4);border:1px solid var(--border);border-radius:6px;padding:4px 8px;margin-bottom:4px;font-size:11px;font-family:var(--mono);}
+
+/* ── Checklist ── */
+#panel-checklist .finput{width:100%;box-sizing:border-box;}
+#chk-itens-form input{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-family:var(--mono);}
+#chk-itens-form input:focus{outline:none;border-color:var(--accent);}
+#chk-preview{line-height:1.7;color:var(--text);min-height:200px;}

@@ -219,6 +219,7 @@ function nav(id, el) {
     if(id==='reldiario') renderRelDiario();
     if(id==='relmensal') { populateMeses(); renderRelMensal(); }
     if(id==='controle') { initControle(); renderControle(); }
+    if(id==='checklist') { initChecklist(); }
     if(id==='historico') renderHistorico();
     if(id==='config') renderConfig();
 
@@ -473,6 +474,207 @@ function removerExtra(i) {
   renderExtrasList();
 }
 
+
+// ══════════════════════════════════════
+// CHECKLIST DE CONFERÊNCIA
+// ══════════════════════════════════════
+
+const CHECKLIST_STORAGE_KEY = 'inforwnet_checklist_itens';
+const CHECKLIST_WPP_KEY = 'inforwnet_checklist_wpp';
+
+const CHECKLIST_ITENS_DEFAULT = [
+  { nome: 'DROP', unidade: 'METROS' },
+  { nome: 'CABO LAN', unidade: 'METROS' },
+  { nome: 'APC', unidade: '' },
+  { nome: 'UPC', unidade: '' },
+  { nome: 'ACOPLADOR', unidade: '' },
+  { nome: 'RJ45', unidade: '' },
+  { nome: 'ONU', unidade: '' },
+  { nome: 'ONT', unidade: '' },
+  { nome: 'ROTEADOR', unidade: '' },
+  { nome: 'FONTE POE', unidade: '' },
+  { nome: 'CÂMERA EXTERNA', unidade: '' },
+  { nome: 'CÂMERA INTERNA', unidade: '' },
+  { nome: 'PLACA METRO', unidade: '' },
+  { nome: 'SWITCH', unidade: '' },
+  { nome: 'FIXA-FIO', unidade: '' },
+  { nome: 'CAIXINHA DE EMENDA', unidade: '' },
+  { nome: 'ARAME DE ESPINAR', unidade: '' },
+  { nome: 'FITA DE AUTO FUSÃO', unidade: '' },
+  { nome: 'ADESIVOS', unidade: '' },
+];
+
+function getChecklistItens() {
+  try {
+    const s = localStorage.getItem(CHECKLIST_STORAGE_KEY);
+    return s ? JSON.parse(s) : [...CHECKLIST_ITENS_DEFAULT];
+  } catch { return [...CHECKLIST_ITENS_DEFAULT]; }
+}
+
+function saveChecklistItens(itens) {
+  localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(itens));
+}
+
+function getChecklistWpp() {
+  return localStorage.getItem(CHECKLIST_WPP_KEY) || '';
+}
+
+function saveChecklistWpp(link) {
+  localStorage.setItem(CHECKLIST_WPP_KEY, link);
+}
+
+function initChecklist() {
+  renderChecklistForm();
+  renderChecklistPreview();
+}
+
+function renderChecklistForm() {
+  const itens = getChecklistItens();
+  const el = document.getElementById('chk-itens-form');
+  if (!el) return;
+  el.innerHTML = itens.map((item, i) => `
+    <div style="display:grid;grid-template-columns:1fr 90px;gap:8px;margin-bottom:8px;align-items:center;">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--muted2);">${item.nome}${item.unidade ? ' (' + item.unidade + ')' : ''}</label>
+      <input type="number" id="chk-val-${i}" placeholder="0" min="0" oninput="renderChecklistPreview()" style="text-align:center;font-family:var(--mono);font-size:12px;">
+    </div>
+  `).join('');
+}
+
+function renderChecklistPreview() {
+  const itens = getChecklistItens();
+  const equipe = document.getElementById('chk-equipe')?.value || 'EQUIPE 01';
+  const tecnico = document.getElementById('chk-tecnico')?.value?.trim() || '—';
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  let msg = `${equipe} - ${tecnico}
+DATA ${hoje}
+MATERIAIS:
+`;
+
+  itens.forEach((item, i) => {
+    const val = (document.getElementById(`chk-val-${i}`)?.value || '').trim();
+    const unid = item.unidade ? ` ${item.unidade}` : '';
+    msg += `${item.nome}: ${val || 'NÃO'}${unid}
+`;
+  });
+
+  const pre = document.getElementById('chk-preview');
+  if (pre) pre.textContent = msg;
+
+  // Mostrar hint do WhatsApp se não configurado
+  const hint = document.getElementById('chk-wpp-hint');
+  if (hint) hint.style.display = getChecklistWpp() ? 'none' : 'block';
+}
+
+function copiarChecklist() {
+  const texto = document.getElementById('chk-preview')?.textContent || '';
+  if (!texto) return;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(texto).then(() => appAlert('Texto copiado!', 'success', 'Copiado'));
+  } else {
+    appAlert('Copie manualmente o texto da prévia.', 'warn');
+  }
+}
+
+function enviarChecklistWhatsApp() {
+  const texto = document.getElementById('chk-preview')?.textContent || '';
+  const wppLink = getChecklistWpp();
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(texto);
+  }
+
+  if (wppLink) {
+    window.open(wppLink, '_blank');
+    appAlert('Mensagem copiada! Cole no grupo do WhatsApp.', 'success', 'WhatsApp');
+  } else {
+    const encoded = encodeURIComponent(texto);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  }
+}
+
+async function editarItensChecklist() {
+  const itens = getChecklistItens();
+  const wpp = getChecklistWpp();
+
+  const listaHtml = itens.map((item, i) =>
+    `<div class="edit-extra-item" id="chk-edit-${i}">
+      <span style="font-family:var(--mono);font-size:11px;">${item.nome}${item.unidade ? ' (' + item.unidade + ')' : ''}</span>
+      <button type="button" onclick="removeChecklistItem(${i})" class="btn-del-record">✕</button>
+    </div>`
+  ).join('');
+
+  const box = document.getElementById('app-modal-box');
+  box.classList.add('modal-box--os');
+
+  const v = await showModal({
+    type: 'info',
+    title: 'Editar itens do Checklist',
+    msg: `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label class="flabel">Link do grupo WhatsApp</label>
+          <input type="text" id="chk-edit-wpp" class="finput" placeholder="https://chat.whatsapp.com/..." value="${escapeHtml(wpp)}" style="margin-top:4px;">
+          <div style="font-size:10px;color:var(--muted);margin-top:4px;">Cole o link de convite do grupo. Deixe vazio para abrir o WhatsApp normalmente.</div>
+        </div>
+        <div>
+          <label class="flabel">Itens da lista</label>
+          <div id="chk-edit-list" style="margin:8px 0;">${listaHtml}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input type="text" id="chk-new-nome" class="finput" placeholder="Nome do item (ex: FIBRA)" style="flex:1;">
+            <button type="button" class="btn btn-primary" onclick="addChecklistItem()">+</button>
+          </div>
+        </div>
+      </div>
+    `,
+    actions: [
+      { label: 'Cancelar', style: 'ghost', value: 'cancel' },
+      { label: 'Salvar', style: 'primary', value: 'ok' },
+    ],
+  });
+
+  box.classList.remove('modal-box--os');
+
+  if (v !== 'ok') { window._chkEditItens = null; return; }
+
+  const novosItens = window._chkEditItens || itens;
+  saveChecklistItens(novosItens);
+  window._chkEditItens = null;
+
+  const novoWpp = (document.getElementById('chk-edit-wpp')?.value || '').trim();
+  saveChecklistWpp(novoWpp);
+
+  renderChecklistForm();
+  renderChecklistPreview();
+  appAlert('Checklist atualizado!', 'success', 'Salvo');
+}
+
+function addChecklistItem() {
+  if (!window._chkEditItens) window._chkEditItens = [...getChecklistItens()];
+  const nome = (document.getElementById('chk-new-nome')?.value || '').trim().toUpperCase();
+  if (!nome) return;
+  window._chkEditItens.push({ nome, unidade: '' });
+  renderChkEditList();
+  document.getElementById('chk-new-nome').value = '';
+}
+
+function removeChecklistItem(idx) {
+  if (!window._chkEditItens) window._chkEditItens = [...getChecklistItens()];
+  window._chkEditItens.splice(idx, 1);
+  renderChkEditList();
+}
+
+function renderChkEditList() {
+  const el = document.getElementById('chk-edit-list');
+  if (!el) return;
+  el.innerHTML = (window._chkEditItens || []).map((item, i) =>
+    `<div class="edit-extra-item" id="chk-edit-${i}">
+      <span style="font-family:var(--mono);font-size:11px;">${item.nome}${item.unidade ? ' (' + item.unidade + ')' : ''}</span>
+      <button type="button" onclick="removeChecklistItem(${i})" class="btn-del-record">✕</button>
+    </div>`
+  ).join('');
+}
+
 // ══════════════════════════════════════
 // ANIMATED COUNTER
 // ══════════════════════════════════════
@@ -600,6 +802,8 @@ function buildOSItemHtml(o, idx, opts = {}) {
         <span class="os-team"><span class="badge ${o.team === 'equipe1' ? 'badge-blue' : 'badge-warn'}">${o.team === 'equipe1' ? 'Equipe 1' : 'Equipe 2'}</span></span>
         ${userBadge(o)}
         <button type="button" class="btn-ver-os${temTexto ? '' : ' btn-ver-os--off'}" onclick="verOSCompleta(${o.id})" title="${temTexto ? 'Ver texto completo da OS' : 'Texto não salvo nesta OS'}">Ver OS completa</button>
+        ${(opts.showActions && canEditRecord(o)) ? `<button type="button" class="btn-edit-os" onclick="editarOS(${o.id})" title="Editar OS">✎ Editar</button>` : ''}
+        ${(opts.showActions && canEditRecord(o)) ? `<button type="button" class="btn-del-os" onclick="apagarOS(${o.id})" title="Apagar OS">✕ Apagar</button>` : ''}
       </div>
       ${items.length ? `<div class="os-mats">${items.map(([k, v]) => `<span class="chip">${escapeHtml(k)}: <strong>${v}</strong></span>`).join('')}</div>` : ''}
       ${equips.length ? `<div class="os-mats os-equips">${equips.map((e) => `<span class="chip chip-equip">${escapeHtml(e.nome)}: <strong>${e.qtd}</strong></span>`).join('')}</div>` : ''}
@@ -653,11 +857,193 @@ function verOSCompleta(orderId) {
   });
 }
 
+
+async function apagarOS(id) {
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  if (!canEditRecord(o)) {
+    appAlert('Você só pode apagar OS que você registrou.', 'warn', 'Sem permissão');
+    return;
+  }
+  const confirm = await showModal({
+    type: 'warn',
+    title: 'Apagar OS?',
+    msg: `Tem certeza que deseja apagar a OS <strong>${o.numOS !== '—' ? '#' + o.numOS : ''}</strong>?<br>Esta ação não pode ser desfeita.`,
+    actions: [
+      { label: 'Cancelar', style: 'ghost', value: 'cancel' },
+      { label: 'Apagar', style: 'danger', value: 'ok' },
+    ],
+  });
+  if (confirm !== 'ok') return;
+  if (useSupabase()) {
+    try {
+      await DB.deleteOrder(id);
+    } catch (e) {
+      appAlert(e.message || 'Erro ao apagar OS.', 'error', 'Erro');
+      return;
+    }
+  }
+  orders = orders.filter(x => x.id !== id);
+  if (!useSupabase()) save();
+  renderOrdens();
+  renderDashboard();
+  appAlert('OS apagada com sucesso.', 'success', 'Apagado');
+}
+
+
+function editarOS(id) {
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  if (!canEditRecord(o)) {
+    appAlert('Você só pode editar OS que você registrou.', 'warn', 'Sem permissão');
+    return;
+  }
+
+  const tipoOptions = [
+    { value: 'corretiva', label: 'Corretiva' },
+    { value: 'preventiva', label: 'Preventiva' },
+    { value: 'instalacao_kit', label: 'Instalação de Kit' },
+    { value: 'mudanca_endereco', label: 'Mudança de Endereço' },
+  ].map(t => `<option value="${t.value}"${o.tipo === t.value ? ' selected' : ''}>${t.label}</option>`).join('');
+
+  const extrasHtml = (o.extras || []).map((ex, i) =>
+    `<div class="edit-extra-item" id="edit-extra-${i}">
+      <span>${escapeHtml(ex.nome)} × ${ex.qtd}</span>
+      <button type="button" onclick="removeEditExtra(${i})" class="btn-del-record">✕</button>
+    </div>`
+  ).join('');
+
+  const box = document.getElementById('app-modal-box');
+  box.classList.add('modal-box--os');
+
+  showModal({
+    type: 'info',
+    title: o.numOS !== '—' ? `Editar OS #${o.numOS}` : 'Editar OS',
+    msg: `
+      <div class="edit-os-form">
+        <div class="edit-os-row">
+          <div class="edit-os-field">
+            <label class="flabel">Data</label>
+            <input type="date" id="edit-date" class="finput" value="${o.date}">
+          </div>
+          <div class="edit-os-field">
+            <label class="flabel">Nº OS</label>
+            <input type="text" id="edit-num" class="finput" value="${o.numOS !== '—' ? o.numOS : ''}">
+          </div>
+        </div>
+        <div class="edit-os-row">
+          <div class="edit-os-field">
+            <label class="flabel">Equipe</label>
+            <select id="edit-equipe" class="finput">
+              <option value="equipe1"${o.team === 'equipe1' ? ' selected' : ''}>Equipe 1</option>
+              <option value="equipe2"${o.team === 'equipe2' ? ' selected' : ''}>Equipe 2</option>
+            </select>
+          </div>
+          <div class="edit-os-field">
+            <label class="flabel">Técnico</label>
+            <input type="text" id="edit-tec" class="finput" value="${o.tecnico !== '—' ? escapeHtml(o.tecnico) : ''}">
+          </div>
+        </div>
+        <div class="edit-os-field">
+          <label class="flabel">Tipo de OS</label>
+          <select id="edit-tipo" class="finput">${tipoOptions}</select>
+        </div>
+        <div class="edit-os-field">
+          <label class="flabel">Texto da OS</label>
+          <textarea id="edit-texto" class="finput" rows="8" style="resize:vertical;font-family:var(--mono);font-size:11px;">${escapeHtml(o.textoOS || '')}</textarea>
+        </div>
+        <div class="edit-os-field">
+          <label class="flabel">Material Extra</label>
+          <div id="edit-extras-list">${extrasHtml}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input type="text" id="edit-extra-nome" class="finput" placeholder="Nome do material" style="flex:1;">
+            <input type="number" id="edit-extra-qtd" class="finput" placeholder="Qtd" min="1" style="width:70px;" value="1">
+            <button type="button" class="btn btn-primary" onclick="addEditExtra()">+</button>
+          </div>
+        </div>
+      </div>
+    `,
+    actions: [
+      { label: 'Cancelar', style: 'ghost', value: 'cancel' },
+      { label: 'Salvar', style: 'primary', value: 'ok' },
+    ],
+  }).then(async (v) => {
+    box.classList.remove('modal-box--os');
+    if (v !== 'ok') return;
+
+    const texto = document.getElementById('edit-texto').value.trim();
+    const extracted = texto ? extrairMaterial(texto, keywords) : {};
+    const extraItems = window._editExtras || [...(o.extras || [])];
+
+    const updated = {
+      ...o,
+      date: document.getElementById('edit-date').value || o.date,
+      numOS: document.getElementById('edit-num').value.trim() || '—',
+      team: document.getElementById('edit-equipe').value,
+      tecnico: document.getElementById('edit-tec').value.trim() || '—',
+      tipo: document.getElementById('edit-tipo').value,
+      tipoLabel: TIPO_OS_LABELS[document.getElementById('edit-tipo').value] || 'Corretiva',
+      textoOS: texto,
+      extracted,
+      extras: extraItems,
+    };
+    updated.dateLabel = fmtDate(updated.date);
+
+    if (useSupabase()) {
+      try {
+        await DB.updateOrder(updated);
+      } catch (e) {
+        appAlert(e.message || 'Erro ao salvar OS.', 'error', 'Erro');
+        return;
+      }
+    }
+
+    const idx = orders.findIndex(x => x.id === id);
+    if (idx > -1) orders[idx] = updated;
+    if (!useSupabase()) save();
+    window._editExtras = null;
+    renderOrdens();
+    renderDashboard();
+    appAlert('OS atualizada com sucesso!', 'success', 'Salvo');
+  });
+
+  // Inicializar extras temporários para edição
+  window._editExtras = [...(o.extras || [])];
+}
+
+function addEditExtra() {
+  const nome = (document.getElementById('edit-extra-nome').value || '').trim().toUpperCase();
+  const qtd = parseInt(document.getElementById('edit-extra-qtd').value) || 1;
+  if (!nome) return;
+  if (!window._editExtras) window._editExtras = [];
+  window._editExtras.push({ nome, qtd });
+  renderEditExtrasList();
+  document.getElementById('edit-extra-nome').value = '';
+  document.getElementById('edit-extra-qtd').value = '1';
+}
+
+function removeEditExtra(idx) {
+  if (!window._editExtras) return;
+  window._editExtras.splice(idx, 1);
+  renderEditExtrasList();
+}
+
+function renderEditExtrasList() {
+  const el = document.getElementById('edit-extras-list');
+  if (!el) return;
+  el.innerHTML = (window._editExtras || []).map((ex, i) =>
+    `<div class="edit-extra-item">
+      <span>${escapeHtml(ex.nome)} × ${ex.qtd}</span>
+      <button type="button" onclick="removeEditExtra(${i})" class="btn-del-record">✕</button>
+    </div>`
+  ).join('');
+}
+
 function renderOrdens() {
   const f = ordemFilter==='all' ? orders : orders.filter(o => o.team===ordemFilter);
   const el = document.getElementById('ordens-list');
   if(!f.length) { el.innerHTML='<div class="empty">Nenhuma OS encontrada.</div>'; return; }
-  el.innerHTML = [...f].reverse().map((o, idx) => buildOSItemHtml(o, idx)).join('');
+  el.innerHTML = [...f].reverse().map((o, idx) => buildOSItemHtml(o, idx, { showActions: true })).join('');
 }
 
 // ══════════════════════════════════════

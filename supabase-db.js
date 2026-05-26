@@ -299,6 +299,30 @@
     return mapOrder(res.data);
   }
 
+
+  async function updateOrder(order) {
+    const sb = getClient();
+    const equips = normalizeEquipList(order.equipamentos);
+    const base = {
+      os_date: order.date,
+      team: order.team,
+      tecnico: order.tecnico,
+      tipo: order.tipo,
+      num_os: order.numOS,
+      extracted: order.extracted,
+      extras: packExtrasForDb(order),
+    };
+    let res = await sb.from('orders').update({ ...base, equipamentos: equips }).eq('id', order.id).select().single();
+    if (res.error && /equipamentos|schema cache/i.test(res.error.message || '')) {
+      res = await sb.from('orders').update({
+        ...base,
+        extras: [...base.extras, ...packEquipamentosFallbackInExtras(order)],
+      }).eq('id', order.id).select().single();
+    }
+    if (res.error) throw res.error;
+    return mapOrder(res.data);
+  }
+
   async function deleteAllOrders() {
     if (!isMaster()) throw new Error('Apenas o usuário master pode apagar todos os dados.');
     const sb = getClient();
@@ -398,6 +422,7 @@
     userBadgeHtml,
     authErrorMessage,
     insertOrder,
+    updateOrder,
     deleteAllOrders,
     deleteOrder,
     insertEntrega,
