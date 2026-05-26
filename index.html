@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OS Manager">
 <link rel="manifest" href="manifest.json">
-<title>Inforwnet Telecom </title>
+<title>Inforwnet Telecom — OS Manager</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -512,8 +512,7 @@
             </div>
             <div class="fg">
               <label class="flabel">Material</label>
-              <input type="text" id="ctrl-material" placeholder="Ex: ONT TP LINK, Roteador, Placa..." list="ctrl-material-list" autocomplete="off" data-oninput="atualizarPreviewSaldo()">
-              <datalist id="ctrl-material-list"></datalist>
+              <select id="ctrl-material" data-onchange="atualizarPreviewSaldo()"></select>
             </div>
           </div>
           <div class="frow">

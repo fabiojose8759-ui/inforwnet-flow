@@ -337,12 +337,6 @@ async function processarOS() {
 
   const extracted = extrairMaterial(texto, keywords);
 
-  // Mesclar materiais extras na extração
-  extrasTemp.forEach(ex => {
-    const nomeUpper = ex.nome.toUpperCase().trim();
-    extracted[nomeUpper] = (extracted[nomeUpper] || 0) + ex.qtd;
-  });
-
   if(!Object.keys(extracted).length && !extrasTemp.length) {
     alertEl.className='alert err';
     alertEl.innerHTML='Nada para registrar.<br><small style="opacity:.7">Use palavras-chave no texto (ex: CABO LAN: (16)) ou <strong>Material extra</strong>.</small>';
@@ -1259,20 +1253,21 @@ async function removerEntregaDB(id) {
 function initControle() {
   const el = document.getElementById('ctrl-data');
   if(!el.value) el.value = todayStr();
-  // Preenche datalist com palavras-chave + sugestões de equipamentos já usados
-  const dl = document.getElementById('ctrl-material-list');
-  if(dl) {
-    const sugestoes = [...keywords, ...equipamentosCatalogo];
-    // Adiciona equipamentos já usados em entregas anteriores
-    entregas.forEach(e => { if(e.material && !sugestoes.includes(e.material)) sugestoes.push(e.material); });
-    dl.innerHTML = sugestoes.map(k => `<option value="${k}">`).join('');
+  // Preenche select com palavras-chave + equipamentos do catálogo
+  const sel = document.getElementById('ctrl-material');
+  if(sel) {
+    const todas = [...keywords, ...equipamentosCatalogo.filter(e => !keywords.includes(e))];
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">Selecione o material...</option>'
+      + todas.map(k => `<option value="${k}">${k}</option>`).join('');
+    if(cur && todas.includes(cur)) sel.value = cur;
   }
 }
 
 async function adicionarEntrega() {
   const data = document.getElementById('ctrl-data').value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = (document.getElementById('ctrl-material').value || '').trim().toUpperCase();
+  const material = document.getElementById('ctrl-material').value;
   const qtd = parseInt(document.getElementById('ctrl-qtd').value);
   const obs = document.getElementById('ctrl-obs').value.trim();
   const alertEl = document.getElementById('ctrl-alert');
@@ -1299,7 +1294,6 @@ async function adicionarEntrega() {
   alertEl.textContent=`✓ Entrega registrada: ${qtd}x ${material} → ${equipe==='equipe1'?'Equipe 1':'Equipe 2'}`;
   document.getElementById('ctrl-qtd').value = '';
   document.getElementById('ctrl-obs').value = '';
-  document.getElementById('ctrl-material').value = '';
   const prevEl = document.getElementById('ctrl-preview-saldo');
   if(prevEl) prevEl.style.display='none';
   renderControle();
@@ -1328,7 +1322,7 @@ function calcSaldoDiario(data) {
 function atualizarPreviewSaldo() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = (document.getElementById('ctrl-material').value || '').trim().toUpperCase();
+  const material = document.getElementById('ctrl-material').value;
   const qtd = parseInt(document.getElementById('ctrl-qtd').value) || 0;
   const previewEl = document.getElementById('ctrl-preview-saldo');
   if(!material || qtd < 1) { previewEl.style.display='none'; return; }
