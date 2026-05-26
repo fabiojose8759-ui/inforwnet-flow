@@ -1423,7 +1423,7 @@ function renderSaldoRapido(data) {
 
 function renderControle() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
-  initControle(); // atualiza sugestões do datalist
+  initControle();
   const do_dia = entregas.filter(e => e.data === data);
 
   // Badge de contagem de entregas
@@ -2203,6 +2203,8 @@ async function entrarNoApp(user) {
   setTimeout(() => loginEl.style.display = 'none', 320);
   document.querySelector('.shell').style.display = 'flex';
   renderKwList();
+  renderEquipCatalogList();
+  initControle();
   renderDashboard();
   renderExtrasList();
 }
