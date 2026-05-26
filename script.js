@@ -264,10 +264,19 @@ function getTotals(arr) {
   const t = {};
   keywords.forEach(k => t[k] = {e1:0, e2:0});
   arr.forEach(o => {
+    // Materiais extraídos do texto (palavras-chave)
     Object.entries(o.extracted||{}).forEach(([k,v]) => {
       if(!t[k]) t[k] = {e1:0, e2:0};
       if(o.team==='equipe1') t[k].e1 += v;
       else t[k].e2 += v;
+    });
+    // Materiais extras manuais (ONT, Roteador, ONU, Placa, etc.)
+    (o.extras||[]).filter(e => e && e.tipo !== '__texto_os' && e.tipo !== '__equip').forEach(ex => {
+      const k = ex.nome || ex.name || '';
+      if(!k) return;
+      if(!t[k]) t[k] = {e1:0, e2:0};
+      if(o.team==='equipe1') t[k].e1 += (ex.qtd||1);
+      else t[k].e2 += (ex.qtd||1);
     });
   });
   return t;
@@ -1250,14 +1259,20 @@ async function removerEntregaDB(id) {
 function initControle() {
   const el = document.getElementById('ctrl-data');
   if(!el.value) el.value = todayStr();
-  const sel = document.getElementById('ctrl-material');
-  sel.innerHTML = keywords.map(k => `<option value="${k}">${k}</option>`).join('');
+  // Preenche datalist com palavras-chave + sugestões de equipamentos já usados
+  const dl = document.getElementById('ctrl-material-list');
+  if(dl) {
+    const sugestoes = [...keywords, ...equipamentosCatalogo];
+    // Adiciona equipamentos já usados em entregas anteriores
+    entregas.forEach(e => { if(e.material && !sugestoes.includes(e.material)) sugestoes.push(e.material); });
+    dl.innerHTML = sugestoes.map(k => `<option value="${k}">`).join('');
+  }
 }
 
 async function adicionarEntrega() {
   const data = document.getElementById('ctrl-data').value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = document.getElementById('ctrl-material').value;
+  const material = (document.getElementById('ctrl-material').value || '').trim().toUpperCase();
   const qtd = parseInt(document.getElementById('ctrl-qtd').value);
   const obs = document.getElementById('ctrl-obs').value.trim();
   const alertEl = document.getElementById('ctrl-alert');
@@ -1284,6 +1299,7 @@ async function adicionarEntrega() {
   alertEl.textContent=`✓ Entrega registrada: ${qtd}x ${material} → ${equipe==='equipe1'?'Equipe 1':'Equipe 2'}`;
   document.getElementById('ctrl-qtd').value = '';
   document.getElementById('ctrl-obs').value = '';
+  document.getElementById('ctrl-material').value = '';
   const prevEl = document.getElementById('ctrl-preview-saldo');
   if(prevEl) prevEl.style.display='none';
   renderControle();
@@ -1312,7 +1328,7 @@ function calcSaldoDiario(data) {
 function atualizarPreviewSaldo() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = document.getElementById('ctrl-material').value;
+  const material = (document.getElementById('ctrl-material').value || '').trim().toUpperCase();
   const qtd = parseInt(document.getElementById('ctrl-qtd').value) || 0;
   const previewEl = document.getElementById('ctrl-preview-saldo');
   if(!material || qtd < 1) { previewEl.style.display='none'; return; }
@@ -1413,6 +1429,7 @@ function renderSaldoRapido(data) {
 
 function renderControle() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
+  initControle(); // atualiza sugestões do datalist
   const do_dia = entregas.filter(e => e.data === data);
 
   // Badge de contagem de entregas

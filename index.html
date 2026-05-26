@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OS Manager">
 <link rel="manifest" href="manifest.json">
-<title>Inforwnet Telecom — OS Manager</title>
+<title>Inforwnet Telecom </title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -298,7 +298,7 @@
     <!-- ══ INSERIR OS ══ -->
     <div class="panel" id="panel-inserir">
       <div class="sec-hdr">
-        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Materiais vêm das palavras-chave no texto.</div></div>
+        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Materiais vêm das palavras-chave no texto. Use <strong>Material extra</strong> para ONT, Roteador, ONU, Placa, etc.</div></div>
       </div>
       <div class="card">
         <div class="tags" id="ins-tags"></div>
@@ -512,7 +512,8 @@
             </div>
             <div class="fg">
               <label class="flabel">Material</label>
-              <select id="ctrl-material" data-onchange="atualizarPreviewSaldo()"></select>
+              <input type="text" id="ctrl-material" placeholder="Ex: ONT TP LINK, Roteador, Placa..." list="ctrl-material-list" autocomplete="off" data-oninput="atualizarPreviewSaldo()">
+              <datalist id="ctrl-material-list"></datalist>
             </div>
           </div>
           <div class="frow">
