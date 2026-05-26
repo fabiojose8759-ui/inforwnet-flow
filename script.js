@@ -199,6 +199,7 @@ const CRUMBS = {
 };
 
 function nav(id, el) {
+  if (window.innerWidth <= 768) closeSidebarMobile();
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   el.classList.add('active');
 
@@ -234,7 +235,22 @@ function nav(id, el) {
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    const isOpen = sidebar.classList.toggle('mobile-open');
+    if (overlay) overlay.classList.toggle('visible', isOpen);
+  } else {
+    sidebar.classList.toggle('collapsed');
+  }
+}
+
+function closeSidebarMobile() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('mobile-open');
+  if (overlay) overlay.classList.remove('visible');
 }
 
 // ══════════════════════════════════════
