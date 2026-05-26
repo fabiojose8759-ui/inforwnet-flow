@@ -298,7 +298,7 @@
     <!-- ══ INSERIR OS ══ -->
     <div class="panel" id="panel-inserir">
       <div class="sec-hdr">
-        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Materiais vêm das palavras-chave no texto. ONT/roteador/ONU só pela lista <strong>Equipamentos instalados</strong>.</div></div>
+        <div><div class="sec-title">Inserir Ordem de Serviço</div><div class="sec-sub">Materiais vêm das palavras-chave no texto.</div></div>
       </div>
       <div class="card">
         <div class="tags" id="ins-tags"></div>
@@ -338,24 +338,7 @@
             <!-- Chips dos extras adicionados -->
             <div id="extras-list"></div>
           </div>
-          <div class="fg fg-equip">
-            <label class="flabel">
-              <span class="il-6 il-equip">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
-                Equipamentos instalados
-              </span>
-              <span id="equip-count">0 itens</span>
-            </label>
-            <p class="equip-hint">ONT, roteador, ONU — não use palavras-chave (evita contar “estava desligada” no texto).</p>
-            <div class="extras-field-row">
-              <select id="equip-nome" data-onkeydown="if(event.key==='Enter')document.getElementById('equip-qtd').focus()"></select>
-              <input type="number" id="equip-qtd" placeholder="Qtd" min="1" data-onkeydown="if(event.key==='Enter')adicionarEquipamento()">
-              <button class="btn btn-primary extras-add-btn btn-equip-add" data-onclick="adicionarEquipamento()" title="Adicionar equipamento">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
-              </button>
-            </div>
-            <div id="equip-list"></div>
-          </div>
+
         </div>
 
         <!-- Linha 2: Texto da OS -->

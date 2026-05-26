@@ -92,7 +92,6 @@ let chartPizza, chartBarras, chartCompare;
 
 // Materiais extras temporários (limpos após processar)
 let extrasTemp = []; // [{nome, qtd}]
-let equipamentosTemp = []; // [{nome, qtd}] — ONT/roteador/ONU (manual, não extrai do texto)
 
 // Dados locais (localStorage — fallback sem Supabase)
 try { orders = JSON.parse(localStorage.getItem('os_v3_orders') || '[]'); } catch(e){}
@@ -222,7 +221,7 @@ function nav(id, el) {
     if(id==='controle') { initControle(); renderControle(); }
     if(id==='historico') renderHistorico();
     if(id==='config') renderConfig();
-    if(id==='inserir') { fillEquipSelect(); renderEquipamentosList(); }
+
   };
 
   if (currentPanel) {
@@ -335,9 +334,9 @@ async function processarOS() {
     extracted[nomeUpper] = (extracted[nomeUpper] || 0) + ex.qtd;
   });
 
-  if(!Object.keys(extracted).length && !extrasTemp.length && !equipamentosTemp.length) {
+  if(!Object.keys(extracted).length && !extrasTemp.length) {
     alertEl.className='alert err';
-    alertEl.innerHTML='Nada para registrar.<br><small style="opacity:.7">Use palavras-chave no texto (ex: CABO LAN: (16)), <strong>Material extra</strong> ou <strong>Equipamentos instalados</strong> (ONT/roteador/ONU).</small>';
+    alertEl.innerHTML='Nada para registrar.<br><small style="opacity:.7">Use palavras-chave no texto (ex: CABO LAN: (16)) ou <strong>Material extra</strong>.</small>';
     return;
   }
 
@@ -350,7 +349,6 @@ async function processarOS() {
     textoOS: texto,
     extracted,
     extras: extrasTemp.length ? [...extrasTemp] : [],
-    equipamentos: equipamentosTemp.length ? [...equipamentosTemp] : [],
   };
 
   if (useSupabase()) {
@@ -377,18 +375,13 @@ async function processarOS() {
   if(extrasTemp.length) {
     resultHtml += `<div style="margin-top:4px;font-size:10px;color:var(--orange);">⊕ ${extrasTemp.length} material(is) extra(s) incluído(s)</div>`;
   }
-  if(equipamentosTemp.length) {
-    resultHtml += `<div style="margin-top:4px;font-size:10px;color:#a78bfa;">⚙ ${equipamentosTemp.length} equipamento(s) instalado(s)</div>`;
-  }
 
   alertEl.className='alert ok';
   alertEl.innerHTML = resultHtml;
   document.getElementById('ins-texto').value = '';
   document.getElementById('ins-num').value = '';
   extrasTemp = [];
-  equipamentosTemp = [];
   renderExtrasList();
-  renderEquipamentosList();
   renderDashboard();
 }
 
@@ -398,9 +391,7 @@ function limparInserir() {
   document.getElementById('ins-tec').value = '';
   document.getElementById('ins-alert').className = 'alert';
   extrasTemp = [];
-  equipamentosTemp = [];
   renderExtrasList();
-  renderEquipamentosList();
 }
 
 // ══════════════════════════════════════
@@ -477,61 +468,6 @@ function salvarExtra(i) {
 function removerExtra(i) {
   extrasTemp.splice(i, 1);
   renderExtrasList();
-}
-
-// ══════════════════════════════════════
-// EQUIPAMENTOS (ONT / roteador / ONU — manual, fora das palavras-chave)
-// ══════════════════════════════════════
-function fillEquipSelect() {
-  const sel = document.getElementById('equip-nome');
-  if (!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Selecione o equipamento...</option>'
-    + equipamentosCatalogo.map((n) => `<option value="${n.replace(/"/g, '&quot;')}">${n}</option>`).join('');
-  if (cur && equipamentosCatalogo.includes(cur)) sel.value = cur;
-}
-
-function adicionarEquipamento() {
-  const sel = document.getElementById('equip-nome');
-  const qtdEl = document.getElementById('equip-qtd');
-  const nome = (sel && sel.value ? sel.value : '').trim().toUpperCase();
-  const qtd = parseInt(qtdEl && qtdEl.value, 10) || 0;
-  if (!nome || qtd < 1) return;
-  const existe = equipamentosTemp.find((e) => e.nome === nome);
-  if (existe) existe.qtd += qtd;
-  else equipamentosTemp.push({ nome, qtd });
-  if (qtdEl) qtdEl.value = '';
-  if (sel) sel.value = '';
-  renderEquipamentosList();
-}
-
-function renderEquipamentosList() {
-  const el = document.getElementById('equip-list');
-  const countEl = document.getElementById('equip-count');
-  if (!el) return;
-  if (countEl) {
-    countEl.textContent = equipamentosTemp.length === 0
-      ? '0 itens'
-      : `${equipamentosTemp.length} item${equipamentosTemp.length > 1 ? 's' : ''}`;
-  }
-  if (!equipamentosTemp.length) {
-    el.innerHTML = '<div class="extras-empty">Nenhum equipamento adicionado.</div>';
-    return;
-  }
-  el.innerHTML = equipamentosTemp.map((ex, i) => `
-    <div class="extra-item equip-item-row" id="equip-row-${i}">
-      <span class="extra-item-nome" title="${ex.nome}">${ex.nome}</span>
-      <span class="extra-item-qtd">${ex.qtd}</span>
-      <button class="extra-btn del" onclick="removerEquipamento(${i})" title="Remover">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-  `).join('');
-}
-
-function removerEquipamento(i) {
-  equipamentosTemp.splice(i, 1);
-  renderEquipamentosList();
 }
 
 // ══════════════════════════════════════
@@ -1090,7 +1026,6 @@ function renderEquipCatalogList() {
     <span class="kw-name">${escapeHtml(k)}</span>
     <button class="kw-del${hideDel ? ' hidden' : ''}" onclick="removeEquipCatalog(${i})" title="${hideDel ? 'Apenas master pode remover' : 'Remover'}">✕</button>
   </div>`).join('');
-  fillEquipSelect();
 }
 
 async function addEquipCatalog() {
@@ -2257,8 +2192,6 @@ async function entrarNoApp(user) {
   setTimeout(() => loginEl.style.display = 'none', 320);
   document.querySelector('.shell').style.display = 'flex';
   renderKwList();
-  fillEquipSelect();
-  renderEquipamentosList();
   renderDashboard();
   renderExtrasList();
 }

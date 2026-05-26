@@ -413,13 +413,7 @@ select option{background:var(--bg3);}
 .chip{background:rgba(255,255,255,0.05);border:1px solid var(--border2);color:var(--text2);border-radius:4px;padding:3px 9px;font-size:11px;transition:all 0.15s;}
 .chip-equip{background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:#c4b5fd;}
 .os-equips{margin-top:6px;}
-.equip-hint{font-size:10px;color:var(--muted);margin:0 0 8px;line-height:1.45;}
-.fg-equip .extras-field-row select{flex:1;min-width:0;}
-.btn-equip-add{background:#7c3aed;}
-.btn-equip-add:hover{background:#6d28d9;box-shadow:0 5px 18px rgba(124,58,237,0.28);}
-.il-equip{color:#a78bfa;}
 #panel-inserir .card > .frow{grid-template-columns:1fr 1fr 1fr 1fr;}
-#panel-inserir .fg-equip{grid-column:1/-1;}
 .chip:hover{background:rgba(255,255,255,0.08);border-color:var(--border3);}
 
 /* ══════════════════════════════════════
