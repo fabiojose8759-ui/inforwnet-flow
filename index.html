@@ -213,6 +213,11 @@
       <span class="label">Checklist</span>
     </div>
 
+    <div class="nav-item nav-child" data-onclick="nav('checklist-historico',this)">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+      <span class="label">Histórico de Checklists</span>
+    </div>
+
     <!-- SISTEMA -->
     <div class="nav-group-label label">Sistema</div>
     <div class="nav-item nav-child" data-onclick="nav('config',this)">
@@ -666,13 +671,28 @@
           <div class="card-title">Prévia da mensagem</div>
           <pre id="chk-preview" style="font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;white-space:pre-wrap;flex:1;overflow-y:auto;max-height:480px;"></pre>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-ghost" style="flex:1;" data-onclick="copiarChecklist()">📋 Copiar texto</button>
-            <button class="btn btn-primary" style="flex:1;" data-onclick="enviarChecklistWhatsApp()">📲 Enviar WhatsApp</button>
+            <button class="btn btn-ghost" style="flex:1;" data-onclick="copiarChecklist()">Copiar texto</button>
+            <button class="btn btn-primary" style="flex:1;" data-onclick="enviarChecklistWhatsApp()">Enviar WhatsApp</button>
           </div>
+          <button class="btn" style="width:100%;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80;margin-top:4px;" data-onclick="salvarChecklist()">Salvar no Histórico</button>
           <div id="chk-wpp-hint" style="font-size:10px;color:var(--muted);text-align:center;display:none;">
             Link do grupo não configurado. <a href="#" data-onclick="nav('config',this)" style="color:var(--accent);">Configure nas Configurações</a>
           </div>
         </div>
+      </div>
+    </div>
+
+
+    <!-- ══ HISTÓRICO DE CHECKLISTS ══ -->
+    <div class="panel" id="panel-checklist-historico">
+      <div class="sec-hdr">
+        <div>
+          <div class="sec-title">Histórico de Checklists</div>
+          <div class="sec-sub">Todos os checklists salvos anteriormente</div>
+        </div>
+      </div>
+      <div class="card">
+        <div id="chk-historico-list"><div class="empty">Nenhum checklist salvo ainda.</div></div>
       </div>
     </div>
 

@@ -221,6 +221,7 @@ function nav(id, el) {
     if(id==='relmensal') { populateMeses(); renderRelMensal(); }
     if(id==='controle') { initControle(); renderControle(); }
     if(id==='checklist') { initChecklist(); }
+    if(id==='checklist-historico') { initChecklistHistorico(); }
     if(id==='historico') renderHistorico();
     if(id==='config') renderConfig();
 
@@ -691,6 +692,113 @@ function renderChkEditList() {
   ).join('');
 }
 
+
+// ══════════════════════════════════════
+// HISTÓRICO DE CHECKLISTS
+// ══════════════════════════════════════
+
+const CHECKLIST_HIST_KEY = 'inforwnet_checklist_historico';
+
+function getChecklistHistorico() {
+  try {
+    const s = localStorage.getItem(CHECKLIST_HIST_KEY);
+    return s ? JSON.parse(s) : [];
+  } catch { return []; }
+}
+
+function saveChecklistHistorico(hist) {
+  localStorage.setItem(CHECKLIST_HIST_KEY, JSON.stringify(hist));
+}
+
+function salvarChecklist() {
+  const itens = getChecklistItens();
+  const equipe = document.getElementById('chk-equipe')?.value || 'EQUIPE 01';
+  const tecnico = document.getElementById('chk-tecnico')?.value?.trim() || '—';
+  const hoje = new Date();
+  const dataStr = hoje.toLocaleDateString('pt-BR');
+  const horaStr = hoje.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // Coletar valores preenchidos
+  const valores = itens.map((item, i) => ({
+    nome: item.nome,
+    unidade: item.unidade || '',
+    valor: document.getElementById(`chk-val-${i}`)?.value?.trim() || '',
+  }));
+
+  const registro = {
+    id: Date.now(),
+    data: dataStr,
+    hora: horaStr,
+    equipe,
+    tecnico,
+    valores,
+    texto: document.getElementById('chk-preview')?.textContent || '',
+  };
+
+  const hist = getChecklistHistorico();
+  hist.unshift(registro); // mais recente primeiro
+  saveChecklistHistorico(hist);
+
+  appAlert(`Checklist salvo! ${dataStr} ${horaStr} — ${equipe}`, 'success', 'Salvo');
+}
+
+function initChecklistHistorico() {
+  renderChecklistHistorico();
+}
+
+function renderChecklistHistorico() {
+  const el = document.getElementById('chk-historico-list');
+  if (!el) return;
+  const hist = getChecklistHistorico();
+  if (!hist.length) {
+    el.innerHTML = '<div class="empty">Nenhum checklist salvo ainda.</div>';
+    return;
+  }
+  el.innerHTML = hist.map(r => `
+    <div class="os-item" style="margin-bottom:10px;">
+      <div class="os-header">
+        <span class="badge" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80;font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;">${r.equipe}</span>
+        <span style="font-size:11px;color:var(--muted2);font-family:var(--mono);">${r.data} ${r.hora}</span>
+        <span style="font-size:11px;color:var(--text2);">${escapeHtml(r.tecnico)}</span>
+        <div style="margin-left:auto;display:flex;gap:6px;">
+          <button type="button" class="btn-ver-os" onclick="verChecklistCompleto(${r.id})">Ver completo</button>
+          <button type="button" class="btn-del-os" onclick="apagarChecklist(${r.id})">✕</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;">
+        ${r.valores.filter(v => v.valor && v.valor !== '0' && v.valor !== '').map(v =>
+          `<span class="chip">${escapeHtml(v.nome)}: ${escapeHtml(v.valor)}${v.unidade ? ' ' + v.unidade : ''}</span>`
+        ).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function verChecklistCompleto(id) {
+  const hist = getChecklistHistorico();
+  const r = hist.find(x => x.id === id);
+  if (!r) return;
+  showModal({
+    type: 'info',
+    title: `Checklist — ${r.equipe} — ${r.data} ${r.hora}`,
+    msg: `<pre style="font-family:var(--mono);font-size:11px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;white-space:pre-wrap;max-height:400px;overflow-y:auto;">${escapeHtml(r.texto)}</pre>`,
+    actions: [
+      { label: 'Copiar', style: 'ghost', value: 'copy' },
+      { label: 'Fechar', style: 'primary', value: 'close' },
+    ],
+  }).then(v => {
+    if (v === 'copy' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(r.texto).then(() => appAlert('Texto copiado!', 'success', 'Copiado'));
+    }
+  });
+}
+
+function apagarChecklist(id) {
+  const hist = getChecklistHistorico().filter(x => x.id !== id);
+  saveChecklistHistorico(hist);
+  renderChecklistHistorico();
+}
+
 // ══════════════════════════════════════
 // ANIMATED COUNTER
 // ══════════════════════════════════════
@@ -732,30 +840,149 @@ function renderDashboard() {
   animateCounter(document.getElementById('kpi-e1'), e1.length);
   animateCounter(document.getElementById('kpi-e2'), e2.length);
 
-  // Pizza chart
+  // Pizza chart — com porcentagens
   const pizzaCtx = document.getElementById('chart-pizza').getContext('2d');
   if(chartPizza) chartPizza.destroy();
   if(!keys.length) { pizzaCtx.clearRect(0,0,300,220); }
   else {
+    const pizzaData = keys.map(k => totals[k].e1 + totals[k].e2);
+    const pizzaTotal = pizzaData.reduce((a,b) => a+b, 0);
     chartPizza = new Chart(pizzaCtx, {
-      type:'doughnut',
-      data:{ labels:keys, datasets:[{ data:keys.map(k=>totals[k].e1+totals[k].e2), backgroundColor:COLORS, borderWidth:2, borderColor:'#1a2236' }] },
-      options:{ responsive:true, maintainAspectRatio:true, animation:{ animateRotate:true, animateScale:true, duration:700, easing:'easeOutQuart' }, plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{family:'IBM Plex Mono',size:10}, boxWidth:10, padding:8 } } }, cutout:'55%' }
+      type: 'doughnut',
+      data: {
+        labels: keys,
+        datasets: [{
+          data: pizzaData,
+          backgroundColor: COLORS.map(c => c),
+          borderWidth: 3,
+          borderColor: '#111827',
+          hoverBorderWidth: 4,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { animateRotate: true, animateScale: true, duration: 800, easing: 'easeOutQuart' },
+        cutout: '58%',
+        layout: { padding: { right: 10 } },
+        plugins: {
+          legend: {
+            position: 'right',
+            align: 'center',
+            labels: {
+              color: '#e2e8f0',
+              font: { family: 'IBM Plex Mono', size: 13 },
+              boxWidth: 14, padding: 16,
+              generateLabels: (chart) => {
+                const ds = chart.data.datasets[0];
+                return chart.data.labels.map((label, i) => {
+                  const val = ds.data[i];
+                  const pct = pizzaTotal ? Math.round(val / pizzaTotal * 100) : 0;
+                  return {
+                    text: `${label}  ${pct}%`,
+                    fillStyle: ds.backgroundColor[i],
+                    strokeStyle: ds.backgroundColor[i],
+                    fontColor: '#e2e8f0',
+                    lineWidth: 0,
+                    index: i,
+                  };
+                });
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const val = ctx.parsed;
+                const pct = pizzaTotal ? Math.round(val / pizzaTotal * 100) : 0;
+                return ` ${ctx.label}: ${val} (${pct}%)`;
+              }
+            },
+            backgroundColor: 'rgba(15,23,42,0.95)',
+            titleColor: '#e2e8f0',
+            bodyColor: '#94a3b8',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+          }
+        }
+      }
     });
   }
 
-  // Barras chart
+  // Barras chart — melhorado com valores e grid
   const barCtx = document.getElementById('chart-barras').getContext('2d');
   if(chartBarras) chartBarras.destroy();
   if(!keys.length) { barCtx.clearRect(0,0,300,220); }
   else {
+    const barLabels = keys.map(k => k.length > 10 ? k.substring(0,10)+'…' : k);
     chartBarras = new Chart(barCtx, {
-      type:'bar',
-      data:{ labels:keys.map(k=>k.length>12?k.substring(0,12)+'…':k), datasets:[
-        { label:'Equipe 1', data:keys.map(k=>totals[k].e1), backgroundColor:'rgba(167,139,250,0.7)', borderRadius:4 },
-        { label:'Equipe 2', data:keys.map(k=>totals[k].e2), backgroundColor:'rgba(245,158,11,0.7)', borderRadius:4 }
-      ]},
-      options:{ responsive:true, maintainAspectRatio:true, animation:{ duration:700, easing:'easeOutQuart', delay:(ctx)=>ctx.dataIndex*60 }, plugins:{ legend:{ labels:{ color:'#94a3b8', font:{family:'IBM Plex Mono',size:10}, boxWidth:10 } } }, scales:{ x:{ ticks:{color:'#64748b',font:{family:'IBM Plex Mono',size:9}}, grid:{color:'rgba(255,255,255,0.04)'} }, y:{ ticks:{color:'#64748b',font:{family:'IBM Plex Mono',size:9}}, grid:{color:'rgba(255,255,255,0.06)'} } } }
+      type: 'bar',
+      data: {
+        labels: barLabels,
+        datasets: [
+          {
+            label: 'Equipe 1',
+            data: keys.map(k => totals[k].e1),
+            backgroundColor: 'rgba(167,139,250,0.75)',
+            borderColor: 'rgba(167,139,250,1)',
+            borderWidth: 1,
+            borderRadius: 5,
+            borderSkipped: false,
+          },
+          {
+            label: 'Equipe 2',
+            data: keys.map(k => totals[k].e2),
+            backgroundColor: 'rgba(251,146,60,0.75)',
+            borderColor: 'rgba(251,146,60,1)',
+            borderWidth: 1,
+            borderRadius: 5,
+            borderSkipped: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 800, easing: 'easeOutQuart', delay: (ctx) => ctx.dataIndex * 50 },
+        plugins: {
+          legend: {
+            labels: {
+              color: '#e2e8f0',
+              font: { family: 'IBM Plex Mono', size: 11, weight: '500' },
+              boxWidth: 12, padding: 14,
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const k = keys[ctx.dataIndex];
+                const total = totals[k].e1 + totals[k].e2;
+                const pct = grand ? Math.round(ctx.parsed.y / grand * 100) : 0;
+                return ` ${ctx.dataset.label}: ${ctx.parsed.y}  (${pct}% do total)`;
+              }
+            },
+            backgroundColor: 'rgba(15,23,42,0.95)',
+            titleColor: '#e2e8f0',
+            bodyColor: '#94a3b8',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#94a3b8', font: { family: 'IBM Plex Mono', size: 9 }, maxRotation: 45, minRotation: 30 },
+            grid: { color: 'rgba(255,255,255,0.03)' },
+          },
+          y: {
+            ticks: { color: '#94a3b8', font: { family: 'IBM Plex Mono', size: 9 }, callback: (v) => v },
+            grid: { color: 'rgba(255,255,255,0.08)' },
+            beginAtZero: true,
+          }
+        }
+      }
     });
   }
 
@@ -2837,13 +3064,7 @@ function ProTable(opts) {
         <input id="${opts.containerId}-search" type="text" placeholder="Buscar…">
       </div>` : ''}
       <span class="tbl-info" id="${opts.containerId}-info"></span>
-      ${opts.exportName ? `
-      <button class="tbl-export-btn" onclick="window._ptExport_${opts.containerId}('csv')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV
-      </button>
-      <button class="tbl-export-btn" onclick="window._ptExport_${opts.containerId}('copy')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar
-      </button>` : ''}
+
     </div>
     <div class="tbl-container">
       <table>

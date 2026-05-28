@@ -683,7 +683,7 @@ select option{background:var(--bg3);}
 #panel-dashboard .kpi-row > .kpi.kpi-anim:nth-child(3){--kc:#a78bfa}
 #panel-dashboard .kpi-row > .kpi.kpi-anim:nth-child(4){--kc:#f59e0b}
 .il-5{color:var(--muted);font-size:9px}
-.chart-box{height:220px;display:flex;align-items:center;justify-content:center;}
+.chart-box{height:220px;display:flex;align-items:center;justify-content:center;overflow:visible;}
 .frow{grid-template-columns:1fr 1fr 1fr 1fr;}
 .flabel{display:flex;align-items:center;justify-content:space-between;}
 .il-6{display:flex;align-items:center;gap:4px;color:var(--orange);}
