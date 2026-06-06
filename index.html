@@ -594,6 +594,21 @@
       <div class="sec-hdr"><div><div class="sec-title">Configurações</div><div class="sec-sub">Gerencie palavras-chave e configurações do sistema</div></div></div>
       <div class="grid-2">
         <div class="card">
+          
+        <!-- KIT DE MATERIAIS -->
+        <div class="card">
+          <div class="card-title">Kit de Materiais das Equipes</div>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Itens que aparecem automaticamente no Lançamento em Lote do Controle Diário.</p>
+          <div id="kit-lista"></div>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center">
+            <input type="text" id="kit-novo-nome" class="finput" placeholder="Nome do item (ex: CABO LAN)" style="flex:2;text-transform:uppercase">
+            <input type="text" id="kit-novo-unidade" class="finput" placeholder="Unidade (ex: metros, un)" style="flex:1">
+            <button class="btn btn-primary" data-onclick="adicionarItemKit()" style="white-space:nowrap">
+              <i class="ti ti-plus"></i> Adicionar
+            </button>
+          </div>
+        </div>
+
           <div class="card-title">Palavras-chave de materiais</div>
           <div class="il-10">Só consumíveis no texto da OS (ex: CABO LAN: (16)). Com quantidade no formato indicado.</div>
           <div id="kw-list"></div>
