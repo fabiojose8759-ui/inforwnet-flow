@@ -342,7 +342,11 @@
               <span id="extras-count">0 itens</span>
             </label>
             <div class="extras-field-row">
-              <input type="text" id="extra-nome" placeholder="Nome" data-onkeydown="if(event.key==='Enter')document.getElementById('extra-qtd').focus()">
+              <div class="extra-name-wrap">
+                <input type="text" id="extra-nome" list="extra-materiais-options" placeholder="Nome" autocomplete="off" data-onfocus="showExtraSuggestions()" data-onclick="showExtraSuggestions()" data-oninput="showExtraSuggestions()" data-onkeydown="handleExtraSuggestKey(event)">
+                <datalist id="extra-materiais-options"></datalist>
+                <div id="extra-suggestions" class="extra-suggestions" hidden></div>
+              </div>
               <input type="number" id="extra-qtd" placeholder="Qtd" min="1" data-onkeydown="if(event.key==='Enter')adicionarExtra()">
               <button class="btn btn-primary extras-add-btn" data-onclick="adicionarExtra()" title="Adicionar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M12 5v14M5 12h14"/></svg>
@@ -708,6 +712,6 @@ window.SUPABASE_URL = window.SUPABASE_URL || 'https://cdqrweoqsjefyzowibjd.supab
 window.SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkcXJ3ZW9xc2plZnl6b3dpYmpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NzAwNjcsImV4cCI6MjA5NTI0NjA2N30.S7N6_D_SXAjnIBY3tbmN0cMzy5AvbIo3eIEGSo7p6Ss';
 </script>
 <script src="supabase-db.js?v=10"></script>
-<script src="script.js?v=10"></script>
+<script src="script.js?v=12"></script>
 </body>
 </html>
