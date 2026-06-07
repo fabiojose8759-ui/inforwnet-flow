@@ -324,6 +324,146 @@ function normalizeBusca(str) {
     .replace(/\s+/g, ' ');
 }
 
+function uniqueMateriaisConfig() {
+  const seen = new Set();
+  return [...keywords, ...equipamentosCatalogo]
+    .map(v => String(v || '').trim().toUpperCase())
+    .filter(v => {
+      if(!v) return false;
+      const key = normalizeBusca(v);
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function canonicalMaterialName(nome) {
+  const raw = String(nome || '').trim().toUpperCase();
+  if(!raw) return '';
+  const key = normalizeBusca(raw);
+  const match = uniqueMateriaisConfig().find(item => normalizeBusca(item) === key);
+  return match || raw;
+}
+
+function extraMaterialSuggestions() {
+  const seen = new Set();
+  return equipamentosCatalogo
+    .map(v => String(v || '').trim().toUpperCase())
+    .filter(v => {
+      if(!v) return false;
+      const key = normalizeBusca(v);
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+let extraSuggestActive = -1;
+
+function renderExtraMaterialOptions() {
+  const list = document.getElementById('extra-materiais-options');
+  if(!list) return;
+  list.innerHTML = extraMaterialSuggestions()
+    .map(v => `<option value="${escapeHtml(v)}"></option>`)
+    .join('');
+}
+
+function showExtraSuggestions() {
+  renderExtraMaterialOptions();
+  const input = document.getElementById('extra-nome');
+  const box = document.getElementById('extra-suggestions');
+  if(!input || !box) return;
+
+  const query = normalizeBusca(input.value);
+  const items = extraMaterialSuggestions().filter(item => !query || normalizeBusca(item).includes(query));
+  extraSuggestActive = -1;
+
+  if(!items.length) {
+    hideExtraSuggestions();
+    return;
+  }
+
+  box.innerHTML = items.map(item => `
+    <button type="button" class="extra-suggestion" data-value="${escapeHtml(item)}" onmousedown="selectExtraSuggestionFromButton(this,event)">${escapeHtml(item)}</button>
+  `).join('');
+  box.hidden = false;
+}
+
+function hideExtraSuggestions() {
+  const box = document.getElementById('extra-suggestions');
+  if(box) box.hidden = true;
+  extraSuggestActive = -1;
+}
+
+function selectExtraSuggestionFromButton(btn, event) {
+  if(event) event.preventDefault();
+  const input = document.getElementById('extra-nome');
+  const qtd = document.getElementById('extra-qtd');
+  if(!input || !btn) return;
+  input.value = btn.getAttribute('data-value') || '';
+  hideExtraSuggestions();
+  if(qtd) qtd.focus();
+}
+
+function setExtraSuggestActive(next) {
+  const box = document.getElementById('extra-suggestions');
+  if(!box || box.hidden) return;
+  const buttons = [...box.querySelectorAll('.extra-suggestion')];
+  if(!buttons.length) return;
+  extraSuggestActive = (next + buttons.length) % buttons.length;
+  buttons.forEach((btn, i) => btn.classList.toggle('active', i === extraSuggestActive));
+  buttons[extraSuggestActive].scrollIntoView({ block: 'nearest' });
+}
+
+function handleExtraSuggestKey(event) {
+  const box = document.getElementById('extra-suggestions');
+  if(event.key === 'ArrowDown') {
+    event.preventDefault();
+    if(!box || box.hidden) showExtraSuggestions();
+    setExtraSuggestActive(extraSuggestActive + 1);
+    return;
+  }
+  if(event.key === 'ArrowUp') {
+    event.preventDefault();
+    if(!box || box.hidden) showExtraSuggestions();
+    setExtraSuggestActive(extraSuggestActive - 1);
+    return;
+  }
+  if(event.key === 'Escape') {
+    hideExtraSuggestions();
+    return;
+  }
+  if(event.key === 'Enter') {
+    const buttons = box && !box.hidden ? [...box.querySelectorAll('.extra-suggestion')] : [];
+    if(buttons.length && extraSuggestActive >= 0) {
+      event.preventDefault();
+      selectExtraSuggestionFromButton(buttons[extraSuggestActive], event);
+      return;
+    }
+    document.getElementById('extra-qtd')?.focus();
+  }
+}
+
+document.addEventListener('click', event => {
+  if(!event.target.closest?.('.extra-name-wrap')) hideExtraSuggestions();
+});
+
+function addToMaterialTotals(totals, material, teamKey, qtd) {
+  const nome = canonicalMaterialName(material);
+  const val = Number(qtd) || 0;
+  if(!nome || val <= 0) return;
+  if(!totals[nome]) totals[nome] = {e1:0, e2:0};
+  totals[nome][teamKey] += val;
+}
+
+function normalizeTotalsByCatalog(totals) {
+  const normalized = {};
+  Object.entries(totals || {}).forEach(([material, values]) => {
+    addToMaterialTotals(normalized, material, 'e1', values?.e1 || 0);
+    addToMaterialTotals(normalized, material, 'e2', values?.e2 || 0);
+  });
+  return normalized;
+}
 function extrairMaterial(texto, lista) {
   const result = {};
   lista.forEach(kw => {
@@ -421,7 +561,7 @@ function limparInserir() {
 function adicionarExtra() {
   const nomeEl = document.getElementById('extra-nome');
   const qtdEl  = document.getElementById('extra-qtd');
-  const nome = nomeEl.value.trim().toUpperCase();
+  const nome = canonicalMaterialName(nomeEl.value);
   const qtd  = parseInt(qtdEl.value) || 0;
   if(!nome) { nomeEl.focus(); return; }
   if(qtd <= 0) { qtdEl.focus(); return; }
@@ -439,6 +579,7 @@ function adicionarExtra() {
 
 function renderExtrasList() {
   const el = document.getElementById('extras-list');
+  renderExtraMaterialOptions();
   const countEl = document.getElementById('extras-count');
   if(countEl) countEl.textContent = extrasTemp.length === 0 ? '0 itens' : `${extrasTemp.length} item${extrasTemp.length>1?'s':''}`;
   if(!extrasTemp.length) {
@@ -463,7 +604,7 @@ function editarExtra(i) {
   const row = document.getElementById(`extra-row-${i}`);
   if(!row) return;
   row.innerHTML = `
-    <input class="extra-item-nome-edit" id="edit-nome-${i}" value="${ex.nome}" onkeydown="if(event.key==='Enter')salvarExtra(${i});if(event.key==='Escape')renderExtrasList();">
+    <input class="extra-item-nome-edit" id="edit-nome-${i}" list="extra-materiais-options" value="${ex.nome}" onkeydown="if(event.key==='Enter')salvarExtra(${i});if(event.key==='Escape')renderExtrasList();">
     <input type="number" class="extra-item-qtd-edit" id="edit-qtd-${i}" value="${ex.qtd}" min="1" onkeydown="if(event.key==='Enter')salvarExtra(${i});if(event.key==='Escape')renderExtrasList();">
     <button class="extra-btn save" onclick="salvarExtra(${i})" title="Salvar">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -479,7 +620,7 @@ function salvarExtra(i) {
   const nomeEl = document.getElementById(`edit-nome-${i}`);
   const qtdEl  = document.getElementById(`edit-qtd-${i}`);
   if(!nomeEl || !qtdEl) return;
-  const nome = nomeEl.value.trim().toUpperCase();
+  const nome = canonicalMaterialName(nomeEl.value);
   const qtd  = parseInt(qtdEl.value) || 0;
   if(!nome || qtd <= 0) return;
   extrasTemp[i] = { nome, qtd };
@@ -1199,7 +1340,7 @@ function editarOS(id) {
           <label class="flabel">Material Extra</label>
           <div id="edit-extras-list">${extrasHtml}</div>
           <div style="display:flex;gap:6px;margin-top:6px;">
-            <input type="text" id="edit-extra-nome" class="finput" placeholder="Nome do material" style="flex:1;">
+            <input type="text" id="edit-extra-nome" class="finput" list="extra-materiais-options" placeholder="Nome do material" style="flex:1;">
             <input type="number" id="edit-extra-qtd" class="finput" placeholder="Qtd" min="1" style="width:70px;" value="1">
             <button type="button" class="btn btn-primary" onclick="addEditExtra()">+</button>
           </div>
@@ -1255,11 +1396,13 @@ function editarOS(id) {
 }
 
 function addEditExtra() {
-  const nome = (document.getElementById('edit-extra-nome').value || '').trim().toUpperCase();
+  const nome = canonicalMaterialName(document.getElementById('edit-extra-nome').value);
   const qtd = parseInt(document.getElementById('edit-extra-qtd').value) || 1;
   if (!nome) return;
   if (!window._editExtras) window._editExtras = [];
-  window._editExtras.push({ nome, qtd });
+  const existe = window._editExtras.find(e => canonicalMaterialName(e.nome) === nome);
+  if(existe) existe.qtd = (parseInt(existe.qtd) || 0) + qtd;
+  else window._editExtras.push({ nome, qtd });
   renderEditExtrasList();
   document.getElementById('edit-extra-nome').value = '';
   document.getElementById('edit-extra-qtd').value = '1';
@@ -1658,6 +1801,8 @@ function renderEquipCatalogList() {
     <span class="kw-name">${escapeHtml(k)}</span>
     <button class="kw-del${hideDel ? ' hidden' : ''}" onclick="removeEquipCatalog(${i})" title="${hideDel ? 'Apenas master pode remover' : 'Remover'}">✕</button>
   </div>`).join('');
+  renderExtraMaterialOptions();
+  initControle();
 }
 
 async function addEquipCatalog() {
@@ -1699,6 +1844,8 @@ function renderKwList() {
   </div>`).join('');
   // update ins-tags
   document.getElementById('ins-tags').innerHTML = keywords.map(k=>`<span class="tag">${k}</span>`).join('');
+  renderExtraMaterialOptions();
+  initControle();
 }
 
 async function addKw() {
@@ -1885,7 +2032,7 @@ function initControle() {
   // Preenche select com palavras-chave + equipamentos do catálogo
   const sel = document.getElementById('ctrl-material');
   if(sel) {
-    const todas = [...keywords, ...equipamentosCatalogo.filter(e => !keywords.includes(e))];
+    const todas = uniqueMateriaisConfig();
     const cur = sel.value;
     sel.innerHTML = '<option value="">Selecione o material...</option>'
       + todas.map(k => `<option value="${k}">${k}</option>`).join('');
@@ -1896,7 +2043,7 @@ function initControle() {
 async function adicionarEntrega() {
   const data = document.getElementById('ctrl-data').value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = document.getElementById('ctrl-material').value;
+  const material = canonicalMaterialName(document.getElementById('ctrl-material').value);
   const qtd = parseInt(document.getElementById('ctrl-qtd').value);
   const obs = document.getElementById('ctrl-obs').value.trim();
   const alertEl = document.getElementById('ctrl-alert');
@@ -1937,12 +2084,14 @@ function calcSaldoDiario(data) {
   const do_dia = entregas.filter(e => e.data === data);
   const entregue = {};
   do_dia.forEach(e => {
-    if(!entregue[e.material]) entregue[e.material] = {e1:0, e2:0};
-    if(e.equipe==='equipe1') entregue[e.material].e1 += e.qtd;
-    else entregue[e.material].e2 += e.qtd;
+    const material = canonicalMaterialName(e.material);
+    if(!material) return;
+    if(!entregue[material]) entregue[material] = {e1:0, e2:0};
+    if(e.equipe==='equipe1') entregue[material].e1 += e.qtd;
+    else entregue[material].e2 += e.qtd;
   });
   const osDodia = orders.filter(o => o.date === data);
-  const utilizadoTotals = getTotals(osDodia);
+  const utilizadoTotals = normalizeTotalsByCatalog(getTotals(osDodia));
   const allMats = [...new Set([...Object.keys(entregue), ...Object.keys(utilizadoTotals).filter(k=>utilizadoTotals[k].e1+utilizadoTotals[k].e2>0)])];
 
   return { entregue, utilizadoTotals, allMats, do_dia, osDodia };
@@ -1951,7 +2100,7 @@ function calcSaldoDiario(data) {
 function atualizarPreviewSaldo() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
   const equipe = document.getElementById('ctrl-equipe').value;
-  const material = document.getElementById('ctrl-material').value;
+  const material = canonicalMaterialName(document.getElementById('ctrl-material').value);
   const qtd = parseInt(document.getElementById('ctrl-qtd').value) || 0;
   const previewEl = document.getElementById('ctrl-preview-saldo');
   if(!material || qtd < 1) { previewEl.style.display='none'; return; }
@@ -2565,15 +2714,7 @@ mark.hl{background:rgba(59,130,246,.25);color:var(--text);border-radius:2px;padd
 
 function exportarControlePDF() {
   const data = document.getElementById('ctrl-data')?.value || todayStr();
-  const do_dia = entregas.filter(e => e.data === data);
-  const osDodia = orders.filter(o => o.date === data);
-  const entregue = {};
-  do_dia.forEach(e => {
-    if(!entregue[e.material]) entregue[e.material] = {e1:0,e2:0};
-    if(e.equipe==='equipe1') entregue[e.material].e1+=e.qtd; else entregue[e.material].e2+=e.qtd;
-  });
-  const ut = getTotals(osDodia);
-  const allMats = [...new Set([...Object.keys(entregue), ...Object.keys(ut).filter(k=>ut[k].e1+ut[k].e2>0)])];
+  const { entregue, utilizadoTotals: ut, allMats } = calcSaldoDiario(data);
   if(!allMats.length) { appAlert('Sem dados para a data selecionada.', 'warn', 'Sem dados'); return; }
   const rows = allMats.map(m=>{
     const eE1=entregue[m]?.e1||0,eE2=entregue[m]?.e2||0,uE1=ut[m]?.e1||0,uE2=ut[m]?.e2||0;
